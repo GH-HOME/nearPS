@@ -13,7 +13,7 @@ p = configargparse.ArgumentParser()
 p.add('-c', '--config_filepath', required=False, is_config_file=True, help='Path to config file.')
 
 p.add_argument('--logging_root', type=str, default='./logs', help='root for logging')
-p.add_argument('--experiment_name', type=str, required=True,
+p.add_argument('--experiment_name', type=str, default='testimage', required=False,
                help='Name of subdirectory in logging_root where summaries and checkpoints will be saved.')
 
 # General training options
@@ -35,6 +35,14 @@ p.add_argument('--model_type', type=str, default='sine',
 p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained model.')
 opt = p.parse_args()
 
+
+import torch
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#
+torch.cuda.set_device(1)
+# curr_gpuid = torch.cuda.current_device()
+# print(curr_gpuid)
+
 img_dataset = dataio.Camera()
 coord_dataset = dataio.Implicit2DWrapper(img_dataset, sidelength=512, compute_diff='all')
 image_resolution = (512, 512)
@@ -49,6 +57,9 @@ elif opt.model_type == 'rbf' or opt.model_type == 'nerf':
     model = modules.SingleBVPNet(type='relu', mode=opt.model_type, sidelength=image_resolution)
 else:
     raise NotImplementedError
+
+# model= torch.nn.DataParallel(model)
+# model.to(device)
 model.cuda()
 
 root_path = os.path.join(opt.logging_root, opt.experiment_name)
@@ -56,6 +67,9 @@ root_path = os.path.join(opt.logging_root, opt.experiment_name)
 # Define the loss
 loss_fn = partial(loss_functions.image_mse, None)
 summary_fn = partial(utils.write_image_summary, image_resolution)
+
+
+
 
 training.train(model=model, train_dataloader=dataloader, epochs=opt.num_epochs, lr=opt.lr,
                steps_til_summary=opt.steps_til_summary, epochs_til_checkpoint=opt.epochs_til_ckpt,

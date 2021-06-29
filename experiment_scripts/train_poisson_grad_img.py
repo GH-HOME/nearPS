@@ -15,7 +15,7 @@ p = configargparse.ArgumentParser()
 p.add('-c', '--config_filepath', required=False, is_config_file=True, help='Path to config file.')
 
 p.add_argument('--logging_root', type=str, default='./logs', help='root for logging')
-p.add_argument('--experiment_name', type=str, required=True,
+p.add_argument('--experiment_name', type=str, default='possion_image', required=False,
                help='Name of subdirectory in logging_root where summaries and checkpoints will be saved.')
 
 # General training options
