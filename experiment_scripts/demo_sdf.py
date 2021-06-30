@@ -3,6 +3,7 @@
 
 # Enable import from parent package
 import os
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -15,18 +16,18 @@ p = configargparse.ArgumentParser()
 p.add('-c', '--config_filepath', required=False, is_config_file=True, help='Path to config file.')
 
 p.add_argument('--logging_root', type=str, default='./logs', help='root for logging')
-p.add_argument('--experiment_name', type=str, required=True,
+p.add_argument('--experiment_name', type=str, default='testSDF', required=False,
                help='Name of subdirectory in logging_root where summaries and checkpoints will be saved.')
 
 # General training options
-p.add_argument('--batch_size', type=int, default=16384)
-p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained model.')
+p.add_argument('--batch_size', type=int, default=10)
+p.add_argument('--checkpoint_path', default='./logs/testSDF/checkpoints/model_current.pth', help='Checkpoint to trained model.')
 
 p.add_argument('--model_type', type=str, default='sine',
                help='Options are "sine" (all sine activations) and "mixed" (first layer sine, other layers tanh)')
 p.add_argument('--mode', type=str, default='mlp',
                help='Options are "mlp" or "nerf"')
-p.add_argument('--resolution', type=int, default=1600)
+p.add_argument('--resolution', type=int, default=200)
 
 opt = p.parse_args()
 

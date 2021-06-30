@@ -159,6 +159,7 @@ def helmholtz_pml(model_output, gt):
             squared_slowness = torch.stack((pred_squared_slowness, torch.zeros_like(pred_squared_slowness)), dim=-1)
             squared_slowness = torch.where((torch.abs(x[..., 0, None]) > 0.75) | (torch.abs(x[..., 1, None]) > 0.75),
                                            squared_slowness_init, squared_slowness)
+
         y = y[:, :, :-1]
 
     du, status = diff_operators.jacobian(y, x)
