@@ -306,4 +306,4 @@ def possion_demo():
 
 if __name__ == "__main__":
 
-    possion_demo()
+    image_demo()

@@ -13,7 +13,7 @@ p = configargparse.ArgumentParser()
 p.add('-c', '--config_filepath', required=False, is_config_file=True, help='Path to config file.')
 
 p.add_argument('--logging_root', type=str, default='./logs', help='root for logging')
-p.add_argument('--experiment_name', type=str, default='testimage', required=False,
+p.add_argument('--experiment_name', type=str, default='test_depth', required=False,
                help='Name of subdirectory in logging_root where summaries and checkpoints will be saved.')
 
 # General training options
@@ -32,39 +32,40 @@ p.add_argument('--model_type', type=str, default='sine',
                     '"nerf" (relu activations and positional encoding as in NeRF), "rbf" (input rbf layer, rest relu),'
                     'and in the future: "mixed" (first layer sine, other layers tanh)')
 
+p.add_argument('--depth_map_path', type=str, default='F:/Project/SIREN/siren/data_rendering/depth_approx/lena_r.npy',
+               help='Options are "sine" (all sine activations) and "mixed" (first layer sine, other layers tanh)')
+
+p.add_argument('--mask_path', type=str, default='F:/Project/SIREN/siren/data_rendering/depth_approx/mask.npy',
+               help='Options are "sine" (all sine activations) and "mixed" (first layer sine, other layers tanh)')
+
 p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained model.')
 opt = p.parse_args()
 
 
 import torch
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 torch.cuda.set_device(1)
-curr_gpuid = torch.cuda.current_device()
-print(curr_gpuid)
+# curr_gpuid = torch.cuda.current_device()
+# print(curr_gpuid)
 
-img_dataset = dataio.Camera()
-coord_dataset = dataio.Implicit2DWrapper(img_dataset, sidelength=512, compute_diff='all')
-image_resolution = (256, 256)
+depth_dataset = dataio.DepthMap(opt.depth_map_path, None)
+# coord_dataset = dataio.Implicit2DWrapper(depth_dataset, sidelength=512, compute_diff='all')
+dataloader = DataLoader(depth_dataset, shuffle=True, batch_size=1, pin_memory=True, num_workers=0)
 
-dataloader = DataLoader(coord_dataset, shuffle=True, batch_size=opt.batch_size, pin_memory=True, num_workers=0)
 
 # Define the model.
-if opt.model_type == 'sine' or opt.model_type == 'relu' or opt.model_type == 'tanh' or opt.model_type == 'selu' or opt.model_type == 'elu'\
-        or opt.model_type == 'softplus':
-    model = modules.SingleBVPNet(type=opt.model_type, mode='mlp', sidelength=image_resolution)
-elif opt.model_type == 'rbf' or opt.model_type == 'nerf':
-    model = modules.SingleBVPNet(type='relu', mode=opt.model_type, sidelength=image_resolution)
+if opt.model_type == 'nerf':
+    model = modules.SingleBVPNet(type='relu', mode='nerf', in_features=3)
 else:
-    raise NotImplementedError
+    model = modules.SingleBVPNet(type=opt.model_type, in_features=2)
 model.cuda()
 
-root_path = os.path.join(opt.logging_root, opt.experiment_name)
 
 # Define the loss
-loss_fn = partial(loss_functions.image_mse, None)
-summary_fn = partial(utils.write_image_summary, image_resolution)
+loss_fn = loss_functions.depth_approx
+summary_fn = utils.write_depth_summary
 
-
-
+root_path = os.path.join(opt.logging_root, opt.experiment_name)
 
 training.train(model=model, train_dataloader=dataloader, epochs=opt.num_epochs, lr=opt.lr,
                steps_til_summary=opt.steps_til_summary, epochs_til_checkpoint=opt.epochs_til_ckpt,

@@ -239,3 +239,19 @@ def sdf(model_output, gt):
             'grad_constraint': grad_constraint.mean() * 5e1}  # 1e1      # 5e1
 
 # inter = 3e3 for ReLU-PE
+
+
+def depth_approx(model_output, gt):
+    """
+    x: batch of input coordinates
+    y: depth output
+    """
+
+    gt_depth = gt['depth']
+    pred_depth = model_output['model_out']
+    residue = pred_depth - gt_depth
+    mask = torch.logical_not(torch.isinf(gt_depth))
+    residue = torch.where(mask, residue, torch.zeros_like(pred_depth))
+    # Exp      # Lapl
+    # -----------------
+    return {'depth_mse': (residue ** 2).mean()}  # 1e1      # 5e1

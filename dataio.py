@@ -290,7 +290,6 @@ class SingleHelmholtzSource(Dataset):
                                     'squared_slowness_grid': squared_slowness_grid,
                                     'wavenumber': self.wavenumber}
 
-
 class WaveSource(Dataset):
     def __init__(self, sidelength, velocity='uniform', source_coords=[0., 0., 0.],
                  pretrain=False):
@@ -441,23 +440,36 @@ class PointCloud(Dataset):
         return {'coords': torch.from_numpy(coords).float()}, {'sdf': torch.from_numpy(sdf).float(),
                                                               'normals': torch.from_numpy(normals).float()}
 
-
-class Video(Dataset):
-    def __init__(self, path_to_video):
+class DepthMap(Dataset):
+    def __init__(self, depth_map_path, mask_path):
         super().__init__()
-        if 'npy' in path_to_video:
-            self.vid = np.load(path_to_video)
-        elif 'mp4' in path_to_video:
-            self.vid = skvideo.io.vread(path_to_video).astype(np.single) / 255.
 
-        self.shape = self.vid.shape[:-1]
-        self.channels = self.vid.shape[-1]
+        print("Loading depth map")
+        depth_map = np.load(depth_map_path)
+        if mask_path is not None:
+            mask = np.load(mask_path)
+            depth_map[~mask] = np.inf
+
+        print("Finished loading depth map")
+
+        self.transform = Compose([
+            ToTensor()
+        ])
+
+        sidelength = depth_map.shape
+        self.coords = get_mgrid(sidelength, 2)
+
+        self.depth_map = self.transform(depth_map.reshape(-1, 1))
 
     def __len__(self):
         return 1
 
     def __getitem__(self, idx):
-        return self.vid
+        if idx > 0: raise IndexError
+        return {'coords': self.coords.float()}, {'depth': self.depth_map.float()}
+
+
+
 
 
 class Camera(Dataset):
@@ -493,6 +505,23 @@ class ImageFile(Dataset):
     def __getitem__(self, idx):
         return self.img
 
+
+class Video(Dataset):
+    def __init__(self, path_to_video):
+        super().__init__()
+        if 'npy' in path_to_video:
+            self.vid = np.load(path_to_video)
+        elif 'mp4' in path_to_video:
+            self.vid = skvideo.io.vread(path_to_video).astype(np.single) / 255.
+
+        self.shape = self.vid.shape[:-1]
+        self.channels = self.vid.shape[-1]
+
+    def __len__(self):
+        return 1
+
+    def __getitem__(self, idx):
+        return self.vid
 
 class CelebA(Dataset):
     def __init__(self, split, downsampled=False):

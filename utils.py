@@ -284,6 +284,11 @@ def write_sdf_summary(model, model_input, gt, model_output, writer, total_steps,
         min_max_summary(prefix + 'coords', model_input['coords'], writer, total_steps)
 
 
+
+def write_empty_summary(model, model_input, gt, model_output, writer, total_steps, prefix='train_'):
+    pass
+
+
 def hypernet_activation_summary(model, model_input, gt, model_output, writer, total_steps, prefix='train_'):
     with torch.no_grad():
         hypo_parameters, embedding = model.get_hypo_net_weights(model_input)
@@ -481,6 +486,27 @@ def write_gradients_summary(model, model_input, gt, model_output, writer, total_
     min_max_summary(prefix + 'pred_laplace', pred_laplace, writer, total_steps)
     min_max_summary(prefix + 'pred_img', pred_img, writer, total_steps)
     min_max_summary(prefix + 'gt_img', gt_img, writer, total_steps)
+
+def write_depth_summary(model, model_input, gt, model_output, writer, total_steps, prefix='train_'):
+
+    # gt_img = dataio.lin2img(gt['depth'])
+    pred_img = dataio.lin2img(model_output['model_out'])
+    # output_vs_gt = torch.cat((dataio.rescale_img(gt_img), dataio.rescale_img(pred_img, perc=1e-2)), dim=-1)
+
+    # writer.add_image(prefix + 'comp_gt_vs_pred', make_grid(output_vs_gt, scale_each=False, normalize=True),
+    #                  global_step=total_steps)
+
+    # Plot gt image
+    # writer.add_image(prefix + 'gt_img', make_grid(gt_img, scale_each=False, normalize=True),
+    #                  global_step=total_steps)
+
+    # Plot pred image
+    writer.add_image(prefix + 'pred_img', make_grid(pred_img, scale_each=False, normalize=True),
+                     global_step=total_steps)
+
+    min_max_summary(prefix + 'pred_img', pred_img, writer, total_steps)
+    # min_max_summary(prefix + 'gt_img', gt_img, writer, total_steps)
+    pass
 
 
 def write_gradcomp_summary(model, model_input, gt, model_output, writer, total_steps, prefix='train_'):

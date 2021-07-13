@@ -17,7 +17,7 @@ p = configargparse.ArgumentParser()
 p.add('-c', '--config_filepath', required=False, is_config_file=True, help='Path to config file.')
 
 p.add_argument('--logging_root', type=str, default='./logs', help='root for logging')
-p.add_argument('--experiment_name', type=str, required=True,
+p.add_argument('--experiment_name', type=str, default='test_inpaint', required=False,
                help='Name of subdirectory in logging_root where summaries and checkpoints will be saved.')
 
 # General training options
@@ -35,7 +35,7 @@ p.add_argument('--epochs_til_ckpt', type=int, default=25,
 p.add_argument('--steps_til_summary', type=int, default=1000,
                help='Time interval in seconds until tensorboard summary is saved.')
 
-p.add_argument('--dataset', type=str, default='camera',
+p.add_argument('--dataset', type=str, default='camera_downsampled',
                help='Time interval in seconds until tensorboard summary is saved.')
 p.add_argument('--model_type', type=str, default='sine',
                help='Options currently are "sine" (all sine activations), "relu" (all relu activations,'
