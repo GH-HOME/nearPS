@@ -522,12 +522,14 @@ class ImageFileNPY(Dataset):
         super().__init__()
         img = np.load(filename)
 
-        if grayScale and len(img.shape) == 3:
-            self.img = np.mean(img, axis=2)
+        if len(img.shape) == 2:
             self.img_channels = 1
-        else:
             self.img = img
-            self.img_channels = 3
+        else:
+            self.img_channels = img.shape[2]
+            self.img = img
+            if grayScale:
+                self.img = np.mean(img, axis=2)
 
 
     def __len__(self):

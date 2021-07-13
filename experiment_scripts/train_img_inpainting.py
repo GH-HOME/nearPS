@@ -45,7 +45,7 @@ p.add_argument('--model_type', type=str, default='sine',
 p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained model.')
 
 p.add_argument('--mask_path', type=str, default=None, help='Path to mask image')
-p.add_argument('--custom_image', type=str, default='F:/Project/SIREN/siren/data_rendering/depth_approx/normal_150_150.npy', help='Path to single training image')
+p.add_argument('--custom_image', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\depth.npy', help='Path to single training image')
 opt = p.parse_args()
 
 
