@@ -23,10 +23,10 @@ p.add_argument('--experiment_name', type=str, default='test_inpaint', required=F
 # General training options
 p.add_argument('--batch_size', type=int, default=1)
 p.add_argument('--lr', type=float, default=1e-4, help='learning rate. default=1e-4')
-p.add_argument('--num_epochs', type=int, default=10000,
+p.add_argument('--num_epochs', type=int, default=20000,
                help='Number of epochs to train for.')
 p.add_argument('--k1', type=float, default=1, help='weight on prior')
-p.add_argument('--sparsity', type=float, default=0.1, help='percentage of pixels filled')
+p.add_argument('--sparsity', type=float, default=1, help='percentage of pixels filled')
 p.add_argument('--prior', type=str, default=None, help='prior')
 p.add_argument('--downsample', action='store_true', default=False, help='use image downsampling kernel')
 
@@ -35,7 +35,7 @@ p.add_argument('--epochs_til_ckpt', type=int, default=25,
 p.add_argument('--steps_til_summary', type=int, default=1000,
                help='Time interval in seconds until tensorboard summary is saved.')
 
-p.add_argument('--dataset', type=str, default='camera_downsampled',
+p.add_argument('--dataset', type=str, default='custom',
                help='Time interval in seconds until tensorboard summary is saved.')
 p.add_argument('--model_type', type=str, default='sine',
                help='Options currently are "sine" (all sine activations), "relu" (all relu activations,'
@@ -45,7 +45,7 @@ p.add_argument('--model_type', type=str, default='sine',
 p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained model.')
 
 p.add_argument('--mask_path', type=str, default=None, help='Path to mask image')
-p.add_argument('--custom_image', type=str, default=None, help='Path to single training image')
+p.add_argument('--custom_image', type=str, default='F:/Project/SIREN/siren/data_rendering/depth_approx/normal_150_150.npy', help='Path to single training image')
 opt = p.parse_args()
 
 
@@ -58,10 +58,11 @@ if opt.dataset == 'camera_downsampled':
     coord_dataset = dataio.Implicit2DWrapper(img_dataset, sidelength=256, compute_diff='all')
     image_resolution = (256, 256)
 if opt.dataset == 'custom':
-    img_dataset = dataio.ImageFile(opt.custom_image)
-    coord_dataset = dataio.Implicit2DWrapper(img_dataset, sidelength=(img_dataset[0].size[1], img_dataset[0].size[0]),
-                                             compute_diff='all')
-    image_resolution = (img_dataset[0].size[1], img_dataset[0].size[0])
+    img_dataset = dataio.ImageFileNPY(opt.custom_image, grayScale=False)
+    coord_dataset = dataio.Implicit2DWrapper(img_dataset, (img_dataset[0].shape[1], img_dataset[0].shape[0]),
+                                             compute_diff=None)
+    image_resolution = (img_dataset[0].shape[1], img_dataset[0].shape[0])
+    # image_resolution = (256, 256)
 
 dataloader = DataLoader(coord_dataset, shuffle=True, batch_size=opt.batch_size, pin_memory=True, num_workers=0)
 
@@ -69,6 +70,8 @@ dataloader = DataLoader(coord_dataset, shuffle=True, batch_size=opt.batch_size, 
 if opt.model_type == 'sine' or opt.model_type == 'relu' or opt.model_type == 'tanh':
     model = modules.SingleBVPNet(type=opt.model_type, mode='mlp', out_features=img_dataset.img_channels, sidelength=image_resolution,
                                  downsample=opt.downsample)
+
+    # model = modules.SingleBVPNet(type=opt.model_type, in_features=2)
 elif opt.model_type == 'rbf' or opt.model_type == 'nerf':
     model = modules.SingleBVPNet(type='relu', mode=opt.model_type, out_features=img_dataset.img_channels, sidelength=image_resolution,
                                  downsample=opt.downsample)

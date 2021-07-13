@@ -42,7 +42,7 @@ curr_gpuid = torch.cuda.current_device()
 print(curr_gpuid)
 
 img_dataset = dataio.Camera()
-coord_dataset = dataio.Implicit2DWrapper(img_dataset, sidelength=512, compute_diff='all')
+coord_dataset = dataio.Implicit2DWrapper(img_dataset, sidelength=256, compute_diff='all')
 image_resolution = (256, 256)
 
 dataloader = DataLoader(coord_dataset, shuffle=True, batch_size=opt.batch_size, pin_memory=True, num_workers=0)
@@ -58,13 +58,30 @@ else:
 model.cuda()
 
 root_path = os.path.join(opt.logging_root, opt.experiment_name)
+#
+# # Define the loss
+# loss_fn = partial(loss_functions.image_mse, None)
+# summary_fn = partial(utils.write_image_summary, image_resolution)
+#
+#
+#
+#
+# training.train(model=model, train_dataloader=dataloader, epochs=opt.num_epochs, lr=opt.lr,
+#                steps_til_summary=opt.steps_til_summary, epochs_til_checkpoint=opt.epochs_til_ckpt,
+#                model_dir=root_path, loss_fn=loss_fn, summary_fn=summary_fn)
+
+
+mask = torch.rand(image_resolution) < opt.sparsity
+mask = mask.float().cuda()
 
 # Define the loss
-loss_fn = partial(loss_functions.image_mse, None)
+if opt.prior is None:
+    loss_fn = partial(loss_functions.image_mse, mask.view(-1,1))
+elif opt.prior == 'TV':
+    loss_fn = partial(loss_functions.image_mse_TV_prior, mask.view(-1,1), opt.k1, model)
+elif opt.prior == 'FH':
+    loss_fn = partial(loss_functions.image_mse_FH_prior, mask.view(-1,1), opt.k1, model)
 summary_fn = partial(utils.write_image_summary, image_resolution)
-
-
-
 
 training.train(model=model, train_dataloader=dataloader, epochs=opt.num_epochs, lr=opt.lr,
                steps_til_summary=opt.steps_til_summary, epochs_til_checkpoint=opt.epochs_til_ckpt,

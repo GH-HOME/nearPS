@@ -494,16 +494,75 @@ class Camera(Dataset):
 
 
 class ImageFile(Dataset):
-    def __init__(self, filename):
+    def __init__(self, filename, grayScale = True):
         super().__init__()
-        self.img = Image.open(filename)
+        if os.path.splitext(filename)[-1] == '.npy':
+            img = np.load(filename)
+            if len(img.shape) != 2: # RGB
+                self.img = Image.fromarray(img.astype(np.float), 'RGB')
+            else:
+                self.img = Image.fromarray(img.astype(np.float))
+        else:
+            self.img = Image.open(filename)
+        if grayScale and self.img.mode == 'RGB':
+            self.img = self.img.convert('L')
+
         self.img_channels = len(self.img.mode)
+
 
     def __len__(self):
         return 1
 
     def __getitem__(self, idx):
         return self.img
+
+
+class ImageFileNPY(Dataset):
+    def __init__(self, filename, grayScale = True):
+        super().__init__()
+        img = np.load(filename)
+
+        if grayScale and len(img.shape) == 3:
+            self.img = np.mean(img, axis=2)
+            self.img_channels = 1
+        else:
+            self.img = img
+            self.img_channels = 3
+
+
+    def __len__(self):
+        return 1
+
+    def __getitem__(self, idx):
+        return self.img
+
+
+class Shading_LED(Dataset):
+    def __init__(self, img_paths, LED_path):
+        super().__init__()
+
+        self.numFrames = len(img_paths)
+        self.LED_set = np.load(LED_path)
+        assert len(self.LED_set) == self.numFrames
+        self.imgs = []
+        for img_path in img_paths:
+            if os.path.splitext(img_path)[-1] == '.npy':
+                img = np.load(img_path)
+                if len(img.shape) != 1:  # RGB
+                    img = Image.fromarray(img.astype(np.float32), 'RGB')
+                else:
+                    img = Image.fromarray(img.astype(np.float32))
+            else:
+                img = Image.open(img_path)
+
+            self.imgs.append(img)
+        self.img_channels = len(img.mode)
+
+    def __len__(self):
+        return self.numFrames
+
+    def __getitem__(self, idx):
+        return {'img': self.imgs[idx]}, {'LED_loc': self.LED_set[idx]}
 
 
 class Video(Dataset):
@@ -611,7 +670,7 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         self.sidelength = sidelength
 
         self.transform = Compose([
-            Resize(sidelength),
+            # Resize(sidelength),
             ToTensor(),
             Normalize(torch.Tensor([0.5]), torch.Tensor([0.5]))
         ])
@@ -624,6 +683,8 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         return len(self.dataset)
 
     def __getitem__(self, idx):
+        # img = torch.from_numpy(self.dataset[idx])
+        # img = self.transform(img)
         img = self.transform(self.dataset[idx])
 
         if self.compute_diff == 'gradients':
