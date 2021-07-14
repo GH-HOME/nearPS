@@ -91,11 +91,42 @@ def gradients_mse(model_output, gt):
 
 def gradients_image_mse(mask, model_output, gt):
     gradients = diff_operators.gradient(model_output['model_out'], model_output['model_in'])
+    if mask is None:
+        return {'gradients_loss': ((gradients - gt['gradients']) ** 2).mean()}
+    else:
+        return {'gradients_loss': (mask * (gradients - gt['gradients']) ** 2).mean()}
+
+
+def render_NL_img_mse(mask, model_output, gt):
+    gradients = diff_operators.gradient(model_output['model_out'], model_output['model_in'])
+    dx, dy = gradients[:,:,0], gradients[:,:,1]
+
+    xx, yy =model_output['model_in'][:,:,0] * gt['radius'], model_output['model_in'][:,:,1] * gt['radius']
+    zz = model_output['model_out']
+    ratio = 1.0 / gt['radius']
+    nx = - dx.unsqueeze(2) * ratio
+    ny = - dy.unsqueeze(2) * ratio
+    nz = torch.ones_like(nx)
+    normal_set = torch.stack([nx, ny, nz], dim=2).squeeze(3)
+    N_norm = torch.norm(normal_set, p=2, dim=2)
+    normal_dir = normal_set / N_norm.unsqueeze(2)
+
+    point_set = torch.stack([xx.unsqueeze(2), yy.unsqueeze(2), zz], dim=2).squeeze(3)
+    LED_loc = gt['LED_loc'].unsqueeze(1)
+    lights = point_set - LED_loc
+    L_norm = torch.norm(lights, p=2, dim=2).unsqueeze(2)
+    light_dir = lights / L_norm
+    light_falloff = torch.pow(L_norm, -2)
+
+    shading =  torch.sum(light_dir * normal_dir, dim=2, keepdims=True)
+    attach_shadow = torch.nn.ReLU()
+    img = light_falloff * attach_shadow(shading)
 
     if mask is None:
-        return {'gradients_loss': ((model_output['model_out'] - gt['img']) ** 2).mean()}
+        return {'img_loss': ((img - gt['img']) ** 2).mean()}
     else:
-        return {'gradients_loss': (mask * (model_output['model_out'] - gt['img']) ** 2).mean()}
+        return {'img_loss': (mask * (img - gt['img']) ** 2).mean()}
+
 
 
 def gradients_color_mse(model_output, gt):
