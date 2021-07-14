@@ -521,7 +521,7 @@ class ImageFileNPY(Dataset):
     def __init__(self, filename, grayScale = True):
         super().__init__()
         img = np.load(filename)
-
+        img = img / img.max()
         if len(img.shape) == 2:
             self.img_channels = 1
             self.img = img
@@ -530,6 +530,7 @@ class ImageFileNPY(Dataset):
             self.img = img
             if grayScale:
                 self.img = np.mean(img, axis=2)
+
 
 
     def __len__(self):

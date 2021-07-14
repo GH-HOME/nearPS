@@ -89,6 +89,15 @@ def gradients_mse(model_output, gt):
     return {'gradients_loss': gradients_loss}
 
 
+def gradients_image_mse(mask, model_output, gt):
+    gradients = diff_operators.gradient(model_output['model_out'], model_output['model_in'])
+
+    if mask is None:
+        return {'gradients_loss': ((model_output['model_out'] - gt['img']) ** 2).mean()}
+    else:
+        return {'gradients_loss': (mask * (model_output['model_out'] - gt['img']) ** 2).mean()}
+
+
 def gradients_color_mse(model_output, gt):
     # compute gradients on the model
     gradients_r = diff_operators.gradient(model_output['model_out'][..., 0], model_output['model_in'])

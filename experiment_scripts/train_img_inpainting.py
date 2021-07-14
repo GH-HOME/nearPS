@@ -60,7 +60,7 @@ if opt.dataset == 'camera_downsampled':
 if opt.dataset == 'custom':
     img_dataset = dataio.ImageFileNPY(opt.custom_image, grayScale=False)
     coord_dataset = dataio.Implicit2DWrapper(img_dataset, (img_dataset[0].shape[1], img_dataset[0].shape[0]),
-                                             compute_diff=None)
+                                             compute_diff='gradients')
     image_resolution = (img_dataset[0].shape[1], img_dataset[0].shape[0])
     # image_resolution = (256, 256)
 
@@ -93,7 +93,8 @@ else:
 
 # Define the loss
 if opt.prior is None:
-    loss_fn = partial(loss_functions.image_mse, mask.view(-1,1))
+    # loss_fn = partial(loss_functions.image_mse, mask.view(-1,1))
+    loss_fn = partial(loss_functions.gradients_image_mse, mask.view(-1,1))
 elif opt.prior == 'TV':
     loss_fn = partial(loss_functions.image_mse_TV_prior, mask.view(-1,1), opt.k1, model)
 elif opt.prior == 'FH':
