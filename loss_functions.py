@@ -103,9 +103,9 @@ def render_NL_img_mse(mask, model_output, gt):
 
     xx, yy =model_output['model_in'][:,:,0] * gt['radius'], model_output['model_in'][:,:,1] * gt['radius']
     zz = model_output['model_out']
-    ratio = 1.0 / gt['radius']
-    nx = - dx.unsqueeze(2) * ratio
-    ny = - dy.unsqueeze(2) * ratio
+    ratio = 2.0 / (2 * gt['radius'] + 1.0)
+    nx = - dx.unsqueeze(2)
+    ny = - dy.unsqueeze(2)
     nz = torch.ones_like(nx)
     normal_set = torch.stack([nx, ny, nz], dim=2).squeeze(3)
     N_norm = torch.norm(normal_set, p=2, dim=2)

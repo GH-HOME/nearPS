@@ -32,7 +32,7 @@ p.add_argument('--downsample', action='store_true', default=False, help='use ima
 
 p.add_argument('--epochs_til_ckpt', type=int, default=25,
                help='Time interval in seconds until checkpoint is saved.')
-p.add_argument('--steps_til_summary', type=int, default=1000,
+p.add_argument('--steps_til_summary', type=int, default=300,
                help='Time interval in seconds until tensorboard summary is saved.')
 
 p.add_argument('--dataset', type=str, default='custom',
@@ -58,10 +58,14 @@ if opt.dataset == 'camera_downsampled':
     coord_dataset = dataio.Implicit2DWrapper(img_dataset, sidelength=256, compute_diff='all')
     image_resolution = (256, 256)
 if opt.dataset == 'custom':
-    img_dataset = dataio.ImageFileNPY(opt.custom_image, grayScale=False)
-    coord_dataset = dataio.Implicit2DWrapper(img_dataset, (img_dataset[0].shape[1], img_dataset[0].shape[0]),
+    # img_dataset = dataio.ImageFileNPY(opt.custom_image, grayScale=False)
+    img_dataset = dataio.Shading_LEDNPY(img_paths =  r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\img_set.npy',
+                                        LED_path = r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\LEDs.npy',
+                                        radius = 75)
+    coord_dataset = dataio.Implicit2DWrapper(img_dataset, (img_dataset[0]['img'].shape[0], img_dataset[0]['img'].shape[1]),
                                              compute_diff='gradients')
-    image_resolution = (img_dataset[0].shape[1], img_dataset[0].shape[0])
+    image_resolution = (img_dataset[0]['img'].shape[0], img_dataset[0]['img'].shape[1])
+    print(image_resolution)
     # image_resolution = (256, 256)
 
 dataloader = DataLoader(coord_dataset, shuffle=True, batch_size=opt.batch_size, pin_memory=True, num_workers=0)
@@ -94,7 +98,7 @@ else:
 # Define the loss
 if opt.prior is None:
     # loss_fn = partial(loss_functions.image_mse, mask.view(-1,1))
-    loss_fn = partial(loss_functions.gradients_image_mse, mask.view(-1,1))
+    loss_fn = partial(loss_functions.render_NL_img_mse, mask.view(-1,1))
 elif opt.prior == 'TV':
     loss_fn = partial(loss_functions.image_mse_TV_prior, mask.view(-1,1), opt.k1, model)
 elif opt.prior == 'FH':

@@ -17,7 +17,7 @@ def create_gif(imgs, save_path):
             ims.append([im])
 
     ani = animation.ArtistAnimation(fig, ims, interval=200, blit=True, repeat_delay=1000)
-    ani.save(save_path, writer='pillow')
+    ani.save(save_path, writer='pillow', dpi = 300)
 
 def fmt(x, pos):
     a, b = '{:.3e}'.format(x).split('e')
@@ -47,7 +47,7 @@ def generate_poly_surface(coe, radius):
     # dx = 2 * coe[0] * xx + coe[2] * yy + coe[3]
     # dy = 2 * coe[1] * yy + coe[2] * xx + coe[4]
 
-    scale = 2.2
+    scale = 3
     sphere_radius = 50
     zz = np.sqrt((sphere_radius*scale) ** 2 - xx **2 - yy **2)
     dx = -xx * np.power((sphere_radius*scale) ** 2 - xx **2 - yy **2, -0.5)
@@ -81,7 +81,7 @@ def render_one_LED(Normal_ana, point_cloud, LED_loc, attach_shadow = True):
 
             x_3d = point_cloud[i ,j]
             n = Normal_ana[i, j]
-            light_ins = 1.0 / np.square(np.linalg.norm(x_3d - LED_loc))
+            light_ins = 1.0 / np.square(np.linalg.norm(x_3d - LED_loc)) #* 1e5
             light_dir = (LED_loc - x_3d) / np.linalg.norm(x_3d - LED_loc)
             pix = light_ins * np.dot(n, light_dir)
             if attach_shadow:

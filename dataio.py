@@ -539,6 +539,21 @@ class ImageFileNPY(Dataset):
     def __getitem__(self, idx):
         return self.img
 
+class Shading_LEDNPY(Dataset):
+    def __init__(self, img_paths, LED_path, radius = 75):
+        super().__init__()
+
+        self.LED_set = np.load(LED_path)
+        self.numFrames =  len(self.LED_set)
+        self.imgs = np.load(img_paths)
+        self.radius = radius
+        self.img_channels = 1
+
+    def __len__(self):
+        return self.numFrames
+
+    def __getitem__(self, idx):
+        return {'img': self.imgs[idx], 'LED_loc': self.LED_set[idx], 'radius': self.radius}
 
 class Shading_LED(Dataset):
     def __init__(self, img_paths, LED_path):
@@ -688,7 +703,13 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         # img = torch.from_numpy(self.dataset[idx])
         # img = self.transform(img)
-        img = self.transform(self.dataset[idx])
+        # img = self.transform(self.dataset[idx])
+
+        data = self.dataset[idx]
+        img, LED_loc, radius = data['img'], data['LED_loc'], data['radius']
+        img = self.transform(img)
+        LED_loc = torch.tensor(LED_loc)
+        radius = torch.tensor(radius)
 
         if self.compute_diff == 'gradients':
             img *= 1e1
@@ -705,7 +726,7 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         img = img.permute(1, 2, 0).view(-1, self.dataset.img_channels)
 
         in_dict = {'idx': idx, 'coords': self.mgrid}
-        gt_dict = {'img': img}
+        gt_dict = {'img': img, 'LED_loc': LED_loc, 'radius': radius}
 
         if self.compute_diff == 'gradients':
             gradients = torch.cat((torch.from_numpy(gradx).reshape(-1, 1),
