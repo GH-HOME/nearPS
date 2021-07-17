@@ -69,9 +69,9 @@ def render_one_LED(Normal_ana, point_cloud, LED_loc, attach_shadow = True):
 
             x_3d = point_cloud[i ,j]
             n = Normal_ana[i, j]
-            light_ins = 1.0 / np.square(np.linalg.norm(x_3d - LED_loc)) * 1e5
+            light_falloff = 1.0 / np.square(np.linalg.norm(x_3d - LED_loc))
             light_dir = (LED_loc - x_3d) / np.linalg.norm(x_3d - LED_loc)
-            pix = light_ins * np.dot(n, light_dir)
+            pix = light_falloff * np.dot(n, light_dir) * 1e5
             if attach_shadow:
                 pix = np.maximum(pix, 0.0)
 

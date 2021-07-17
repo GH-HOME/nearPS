@@ -255,3 +255,34 @@ def depth_approx(model_output, gt):
     # Exp      # Lapl
     # -----------------
     return {'depth_mse': (residue ** 2).mean()}  # 1e1      # 5e1
+
+
+def render_NL_img_mse(mask, model_output, gt):
+    gradients = diff_operators.gradient(model_output['model_out'], model_output['model_in'])
+    dx, dy = gradients[:,:,0], gradients[:,:,1]
+
+    xx, yy =model_output['model_in'][:,:,0], model_output['model_in'][:,:,1]
+    zz = model_output['model_out']
+    nx = - dx.unsqueeze(2)
+    ny = - dy.unsqueeze(2)
+    nz = torch.ones_like(nx)
+    normal_set = torch.stack([nx, ny, nz], dim=2).squeeze(3)
+    N_norm = torch.norm(normal_set, p=2, dim=2)
+    normal_dir = normal_set / N_norm.unsqueeze(2)
+
+    point_set = torch.stack([xx.unsqueeze(2), yy.unsqueeze(2), zz], dim=2).squeeze(3)
+    LED_loc = gt['LED_loc'].unsqueeze(1)
+    lights = LED_loc - point_set
+    L_norm = torch.norm(lights, p=2, dim=2).unsqueeze(2)
+    light_dir = lights / L_norm
+    light_falloff = torch.pow(L_norm, -2)
+
+    shading =  torch.sum(light_dir * normal_dir, dim=2, keepdims=True)
+    attach_shadow = torch.nn.ReLU()
+    img = light_falloff * attach_shadow(shading) * 1e5
+    # img = light_falloff * shading * 1e5
+
+    if mask is None:
+        return {'img_loss': ((img - gt['img']) ** 2).mean()}
+    else:
+        return {'img_loss': (mask * (img - gt['img']) ** 2).mean()}

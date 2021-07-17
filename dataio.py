@@ -682,6 +682,22 @@ class AudioFile(Dataset):
         return self.rate, self.data
 
 
+class Shading_LEDNPY(Dataset):
+    def __init__(self, img_paths, LED_path):
+        super().__init__()
+
+        self.LED_set = np.load(LED_path)
+        self.numFrames =  len(self.LED_set)
+        self.imgs = np.load(img_paths)
+        self.img_channels = 1
+
+    def __len__(self):
+        return self.numFrames
+
+    def __getitem__(self, idx):
+        return {'img': self.imgs[idx], 'LED_loc': self.LED_set[idx]}
+
+
 class Implicit2DWrapper(torch.utils.data.Dataset):
     def __init__(self, dataset, sidelength=None, compute_diff=None):
 
@@ -705,7 +721,11 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         # img = torch.from_numpy(self.dataset[idx])
         # img = self.transform(img)
-        img = self.transform(self.dataset[idx])
+        # img = self.transform(self.dataset[idx])
+        data = self.dataset[idx]
+        img, LED_loc = data['img'], data['LED_loc']
+        img = self.transform(img)
+        LED_loc = torch.tensor(LED_loc)
 
         if self.compute_diff == 'gradients':
             # img *= 1e1
@@ -722,7 +742,8 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         img = img.permute(1, 2, 0).view(-1, self.dataset.img_channels)
 
         in_dict = {'idx': idx, 'coords': self.mgrid}
-        gt_dict = {'img': img}
+        # gt_dict = {'img': img}
+        gt_dict = {'img': img, 'LED_loc': LED_loc}
 
         if self.compute_diff == 'gradients':
             gradients = torch.cat((torch.from_numpy(gradx).reshape(-1, 1),

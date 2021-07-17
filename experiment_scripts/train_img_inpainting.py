@@ -45,7 +45,8 @@ p.add_argument('--model_type', type=str, default='sine',
 p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained model.')
 
 p.add_argument('--mask_path', type=str, default=None, help='Path to mask image')
-p.add_argument('--custom_image', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\depth.npy', help='Path to single training image')
+p.add_argument('--custom_image', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\img_set.npy', help='Path to single training image')
+p.add_argument('--custom_LEDs', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\LEDs.npy', help='Path to LED location')
 opt = p.parse_args()
 
 
@@ -58,11 +59,11 @@ if opt.dataset == 'camera_downsampled':
     coord_dataset = dataio.Implicit2DWrapper(img_dataset, sidelength=256, compute_diff='all')
     image_resolution = (256, 256)
 if opt.dataset == 'custom':
-    img_dataset = dataio.ImageFileNPY(opt.custom_image, grayScale=False)
+    img_dataset = dataio.Shading_LEDNPY(opt.custom_image, opt.custom_LEDs)
     # img_dataset = dataio.SurfaceTent(128)
-    coord_dataset = dataio.Implicit2DWrapper(img_dataset, (img_dataset[0].shape[1], img_dataset[0].shape[0]),
-                                             compute_diff='gradients')
-    image_resolution = (img_dataset[0].shape[1], img_dataset[0].shape[0])
+    image_resolution = (img_dataset[0]['img'].shape[1], img_dataset[0]['img'].shape[0])
+    coord_dataset = dataio.Implicit2DWrapper(img_dataset, image_resolution, compute_diff='gradients')
+
     # image_resolution = (256, 256)
 
 dataloader = DataLoader(coord_dataset, shuffle=True, batch_size=opt.batch_size, pin_memory=True, num_workers=0)
@@ -72,6 +73,10 @@ if opt.model_type == 'sine' or opt.model_type == 'relu' or opt.model_type == 'ta
     model = modules.SingleBVPNet(type=opt.model_type, mode='mlp', out_features=img_dataset.img_channels, sidelength=image_resolution, num_hidden_layers = 2,
                                  downsample=opt.downsample)
 
+    # model = modules.Siren(in_features=2, out_features=1, hidden_features=256,
+    #                       hidden_layers=3, outermost_linear=True)
+
+    # model = modules.SingleBVPNet(type=opt.model_type, in_features=2)
 elif opt.model_type == 'rbf' or opt.model_type == 'nerf':
     model = modules.SingleBVPNet(type='relu', mode=opt.model_type, out_features=img_dataset.img_channels, sidelength=image_resolution,
                                  downsample=opt.downsample)
@@ -93,7 +98,7 @@ else:
 
 # Define the loss
 if opt.prior is None:
-    loss_fn = partial(loss_functions.image_mse, mask.view(-1,1))
+    loss_fn = partial(loss_functions.render_NL_img_mse, mask.view(-1,1))
 elif opt.prior == 'TV':
     loss_fn = partial(loss_functions.image_mse_TV_prior, mask.view(-1,1), opt.k1, model)
 elif opt.prior == 'FH':
