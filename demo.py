@@ -239,7 +239,7 @@ def normal_depth_mse(model_output, coords, gt_gradients, gt_depth):
     # compare them with the ground-truth
     gradients_loss = torch.mean((gradients - gt_gradients).pow(2).sum(-1))
     depth_loss = torch.mean((model_output - gt_depth).pow(2).sum(-1))
-    return gradients_loss
+    return depth_loss
 
 
 def image_demo():
@@ -316,13 +316,13 @@ def possion_demo():
     dataloader = DataLoader(N_map_data, batch_size=1, pin_memory=True, num_workers=0)
 
     poisson_siren = Siren(in_features=2, out_features=1, hidden_features=256,
-                          hidden_layers=3, outermost_linear=True)
+                          hidden_layers=2, outermost_linear=True)
     poisson_siren.cuda()
 
-    total_steps = 10000
+    total_steps = 20000
     steps_til_summary = 1000
 
-    optim = torch.optim.Adam(lr=1e-5, params=poisson_siren.parameters())
+    optim = torch.optim.Adam(lr=1e-4, params=poisson_siren.parameters())
 
     model_input, gt = next(iter(dataloader))
     gt = {key: value.cuda() for key, value in gt.items()}

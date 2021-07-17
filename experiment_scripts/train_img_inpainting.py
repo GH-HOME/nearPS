@@ -69,8 +69,11 @@ dataloader = DataLoader(coord_dataset, shuffle=True, batch_size=opt.batch_size, 
 
 # Define the model.
 if opt.model_type == 'sine' or opt.model_type == 'relu' or opt.model_type == 'tanh':
-    model = modules.SingleBVPNet(type=opt.model_type, mode='mlp', out_features=img_dataset.img_channels, sidelength=image_resolution,
+    model = modules.SingleBVPNet(type=opt.model_type, mode='mlp', out_features=img_dataset.img_channels, sidelength=image_resolution, num_hidden_layers = 2,
                                  downsample=opt.downsample)
+
+    # model = modules.Siren(in_features=2, out_features=1, hidden_features=256,
+    #                       hidden_layers=3, outermost_linear=True)
 
     # model = modules.SingleBVPNet(type=opt.model_type, in_features=2)
 elif opt.model_type == 'rbf' or opt.model_type == 'nerf':
