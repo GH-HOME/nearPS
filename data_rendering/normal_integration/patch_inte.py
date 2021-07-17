@@ -36,11 +36,12 @@ def generate_poly_surface(coe, radius):
     dx = 2 * coe[0] * xx + coe[2] * yy + coe[3]
     dy = 2 * coe[1] * yy + coe[2] * xx + coe[4]
 
-    # scale = 3
-    # sphere_radius = 5
-    # zz = np.sqrt((sphere_radius*scale) ** 2 - xx **2 - yy **2)
-    # dx = -xx * np.power((sphere_radius*scale) ** 2 - xx **2 - yy **2, -0.5)
-    # dy = -yy * np.power((sphere_radius * scale) ** 2 - xx ** 2 - yy ** 2, -0.5)
+    scale = 2.5
+    sphere_radius = 50
+    zz = np.sqrt((sphere_radius*scale) ** 2 - xx **2 - yy **2)
+    zz = zz - zz.mean()
+    dx = -xx * np.power((sphere_radius*scale) ** 2 - xx **2 - yy **2, -0.5)
+    dy = -yy * np.power((sphere_radius * scale) ** 2 - xx ** 2 - yy ** 2, -0.5)
 
     point_cloud = np.array([xx+radius, yy+radius, zz]).transpose([1, 2, 0])
 

@@ -339,6 +339,28 @@ def write_image_summary(image_resolution, model, model_input, gt,
     img_gradient = diff_operators.gradient(model_output['model_out'], model_output['model_in'])
     img_laplace = diff_operators.laplace(model_output['model_out'], model_output['model_in'])
 
+    dx, dy = img_gradient[:, :, 0], img_gradient[:, :, 1]
+    ratio = 2.0 / (2 * torch.tensor([75]).cuda() + 1.0)
+    nx = - dx.unsqueeze(2) #* ratio
+    ny = - dy.unsqueeze(2) #* ratio
+    nz = torch.ones_like(nx)
+    normal_set = torch.stack([nx, ny, nz], dim=2).squeeze(3)
+    N_norm = torch.norm(normal_set, p=2, dim=2)
+    normal_dir = normal_set / N_norm.unsqueeze(2)
+    normal_dir = normal_dir.detach().cpu().numpy()
+    N_gt = np.load(r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\normal.npy')
+    h, w, _ = N_gt.shape
+    from hutils.PhotometricStereoUtil import evaluate_angular_error, evalsurfaceNormal
+    error_map, mae, _ = evalsurfaceNormal(normal_dir.squeeze().reshape(h, w, 3), N_gt, mask = np.ones([h, w]).astype(np.bool))
+
+    print('MAE: ', mae)
+    plt.imshow(normal_dir.squeeze().reshape(h, w, 3) / 2 + 0.5)
+    plt.show()
+
+    plt.imshow(error_map)
+    plt.colorbar()
+    plt.show()
+
     output_vs_gt = torch.cat((gt_img, pred_img), dim=-1)
     writer.add_image(prefix + 'gt_vs_pred', make_grid(output_vs_gt, scale_each=False, normalize=True),
                      global_step=total_steps)
