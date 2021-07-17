@@ -211,8 +211,8 @@ class NormalMap(Dataset):
         grads_x, grads_y = torch.from_numpy(grads_x), torch.from_numpy(grads_y)
 
         self.grads = torch.stack((grads_x, grads_y), dim=-1).view(-1, 2)
-        sidelength = N.shape
-        self.coords = get_mgrid(151, 2)
+        sidelength = N.shape[0]
+        self.coords = get_mgrid(sidelength, 2)
 
     def __len__(self):
         return 1
@@ -323,8 +323,8 @@ def possion_demo():
             zxzy = img_grad.cpu().view(h, w, 2).detach().numpy()
             zx = zxzy[:, :, 0]
             zy = zxzy[:, :, 1]
-            N_est = np.array([zx, zy, np.ones_like(zx)]).transpose([1, 2, 0])
-            N_est = N_est / np.linalg.norm(N_est, axis=1, keepdims=True)
+            N_est = np.array([-zx, -zy, np.ones_like(zx)]).transpose([1, 2, 0])
+            N_est = N_est / np.linalg.norm(N_est, axis=2, keepdims=True)
             from hutils.PhotometricStereoUtil import evalsurfaceNormal
             Error_map, MAE, MedianE = evalsurfaceNormal(N_est, N_gt, np.ones_like(zx).astype(np.bool))
             print(MAE)
