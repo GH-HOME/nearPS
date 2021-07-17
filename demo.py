@@ -12,7 +12,7 @@ import skimage
 import matplotlib.pyplot as plt
 import time
 import scipy.ndimage
-
+import tqdm
 
 
 def get_mgrid(sidelen, dim=2):
@@ -239,7 +239,7 @@ def normal_depth_mse(model_output, coords, gt_gradients, gt_depth):
     # compare them with the ground-truth
     gradients_loss = torch.mean((gradients - gt_gradients).pow(2).sum(-1))
     depth_loss = torch.mean((model_output - gt_depth).pow(2).sum(-1))
-    return depth_loss + gradients_loss
+    return gradients_loss
 
 
 def image_demo():
@@ -307,28 +307,28 @@ def possion_demo():
     N_gt_path = r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\normal.npy'
     depth_gt_path = r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\depth.npy'
     N_gt = np.load(N_gt_path)
-    # h, w, _ = N_gt.shape
-    # N_map_data = NormalMap(N_gt_path, depth_gt_path)
-
-    from dataio import SurfaceTent
-    SurfaceTent_data = SurfaceTent(50)
-    h, w = 50, 50
-    dataloader = DataLoader(SurfaceTent_data, batch_size=1, pin_memory=True, num_workers=0)
+    h, w, _ = N_gt.shape
+    N_map_data = NormalMap(N_gt_path, depth_gt_path)
+    #
+    # from dataio import SurfaceTent
+    # SurfaceTent_data = SurfaceTent(50)
+    # h, w = 50, 50
+    dataloader = DataLoader(N_map_data, batch_size=1, pin_memory=True, num_workers=0)
 
     poisson_siren = Siren(in_features=2, out_features=1, hidden_features=256,
                           hidden_layers=3, outermost_linear=True)
     poisson_siren.cuda()
 
     total_steps = 10000
-    steps_til_summary = 50
+    steps_til_summary = 1000
 
-    optim = torch.optim.Adam(lr=1e-4, params=poisson_siren.parameters())
+    optim = torch.optim.Adam(lr=1e-5, params=poisson_siren.parameters())
 
     model_input, gt = next(iter(dataloader))
     gt = {key: value.cuda() for key, value in gt.items()}
     model_input = model_input.cuda()
 
-    for step in range(total_steps):
+    for step in tqdm.trange(total_steps):
         start_time = time.time()
 
         model_output, coords = poisson_siren(model_input)
@@ -343,10 +343,17 @@ def possion_demo():
             zy = zxzy[:, :, 1]
             N_est = np.array([-zx, -zy, np.ones_like(zx)]).transpose([1, 2, 0])
             N_est = N_est / np.linalg.norm(N_est, axis=2, keepdims=True)
-            N_gt = SurfaceTent_data.n
+            # N_gt = SurfaceTent_data.n
             from hutils.PhotometricStereoUtil import evalsurfaceNormal
             Error_map, MAE, MedianE = evalsurfaceNormal(N_est, N_gt, np.ones_like(zx).astype(np.bool))
-            print(MAE)
+
+            # depth_err = train_loss.detach().cpu().numpy()
+            depth_est = model_output.detach().cpu().numpy()
+            depth_gt = gt['depth'].detach().cpu().numpy()
+            offset = np.mean(depth_gt) -  np.mean(depth_est)
+            depth_est +=  offset
+            depth_err = np.mean(np.abs(depth_est - depth_gt))
+            print('{:.4e}, {:.4f}'.format(depth_err, MAE))
 
             fig, axes = plt.subplots(1, 3, figsize=(18, 6))
             axes[0].imshow(Error_map)
