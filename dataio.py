@@ -2,7 +2,7 @@ import csv
 import glob
 import math
 import os
-
+from matplotlib import pyplot as plt
 import matplotlib.colors as colors
 import numpy as np
 import scipy.io.wavfile as wavfile
@@ -539,6 +539,24 @@ class ImageFileNPY(Dataset):
         return self.img
 
 
+class NormalDepthFileNPY(Dataset):
+    def __init__(self, filename_n, filename_d):
+        super().__init__()
+        normal = np.load(filename_n)
+        depth = np.load(filename_d)
+        self.img_channels = 1
+        self.depth = depth
+        self.normal = normal
+
+
+
+    def __len__(self):
+        return 1
+
+    def __getitem__(self, idx):
+        return self.depth, self.normal
+
+
 class Shading_LED(Dataset):
     def __init__(self, img_paths, LED_path):
         super().__init__()
@@ -674,7 +692,7 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         self.transform = Compose([
             # Resize(sidelength),
             ToTensor(),
-            Normalize(torch.Tensor([0.5]), torch.Tensor([0.5]))
+            # Normalize(torch.Tensor([0.5]), torch.Tensor([0.5]))
         ])
 
         self.compute_diff = compute_diff
@@ -690,7 +708,7 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         img = self.transform(self.dataset[idx])
 
         if self.compute_diff == 'gradients':
-            img *= 1e1
+            # img *= 1e1
             gradx = scipy.ndimage.sobel(img.numpy(), axis=1).squeeze(0)[..., None]
             grady = scipy.ndimage.sobel(img.numpy(), axis=2).squeeze(0)[..., None]
         elif self.compute_diff == 'laplacian':
@@ -979,3 +997,48 @@ class CompositeGradients(Dataset):
                    'gradients': self.comp_grads}
 
         return in_dict, gt_dict
+
+
+
+class SurfaceTent(Dataset):
+    def __init__(self, sidelength):
+        super().__init__()
+        x = np.linspace(-1, 1, num=sidelength)
+        y = np.linspace(-1, 1, num=sidelength)
+        XX, YY = np.meshgrid(x, y)
+        YY = np.flip(YY, axis=0)
+        slope = 0.6
+        z = np.zeros_like(XX)
+        zx = np.zeros_like(XX)
+        zy = np.zeros_like(XX)
+
+        sphere_radius = 1.5
+        z = np.sqrt((sphere_radius) ** 2 - XX ** 2 - YY ** 2)
+        z = z - z.mean()
+        zx = -XX * np.power((sphere_radius) ** 2 - XX ** 2 - YY ** 2, -0.5)
+        zy = -YY * np.power((sphere_radius) ** 2 - XX ** 2 - YY ** 2, -0.5)
+
+        # mask_top = np.logical_and.reduce((XX>-0.8, XX<0.8, YY>0, YY<0.8))
+        # zy[mask_top] = -slope
+        # z[mask_top] = 0.8 * slope -slope * YY[mask_top]
+        # mask_bottom = np.logical_and.reduce((XX>-0.8, XX<0.8, YY<0, YY>-0.8))
+        # zy[mask_bottom] = slope
+        # z[mask_bottom] = 0.8 * slope + slope * YY[mask_bottom]
+        # Compute gradient and laplacian
+        grads_x, grads_y = torch.from_numpy(zx), torch.from_numpy(zy)
+        xx, yy = torch.from_numpy(XX).float(), torch.from_numpy(YY.copy()).float()
+        self.mask = np.ones_like(XX, bool)
+        self.grads = torch.stack((grads_x, grads_y), dim=-1)[self.mask]
+        self.coords = torch.stack((xx, yy), dim=-1)[self.mask]
+        self.z = torch.from_numpy(z).double().reshape(-1,1)
+        n_s = np.concatenate((-zx[..., None], -zy[..., None], np.ones_like(zx)[..., None]), axis=-1)
+        n = n_s / np.linalg.norm(n_s, axis=2, keepdims=True)
+        self.n = n
+        self.n_vis = (n + 1) / 2
+        self.n_vis[~self.mask] = 1
+        plt.imshow(self.n_vis)
+        plt.show()
+    def __len__(self):
+        return 1
+    def __getitem__(self, idx):
+        return self.coords, {'grads': self.grads, 'depth': self.z}

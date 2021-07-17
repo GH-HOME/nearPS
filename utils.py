@@ -340,9 +340,8 @@ def write_image_summary(image_resolution, model, model_input, gt,
     img_laplace = diff_operators.laplace(model_output['model_out'], model_output['model_in'])
 
     dx, dy = img_gradient[:, :, 0], img_gradient[:, :, 1]
-    ratio = 2.0 / (2 * torch.tensor([75]).cuda() + 1.0)
-    nx = - dx.unsqueeze(2) #* ratio
-    ny = - dy.unsqueeze(2) #* ratio
+    nx = - dx.unsqueeze(2)
+    ny = - dy.unsqueeze(2)
     nz = torch.ones_like(nx)
     normal_set = torch.stack([nx, ny, nz], dim=2).squeeze(3)
     N_norm = torch.norm(normal_set, p=2, dim=2)

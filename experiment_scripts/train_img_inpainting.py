@@ -59,8 +59,9 @@ if opt.dataset == 'camera_downsampled':
     image_resolution = (256, 256)
 if opt.dataset == 'custom':
     img_dataset = dataio.ImageFileNPY(opt.custom_image, grayScale=False)
+    # img_dataset = dataio.SurfaceTent(128)
     coord_dataset = dataio.Implicit2DWrapper(img_dataset, (img_dataset[0].shape[1], img_dataset[0].shape[0]),
-                                             compute_diff=None)
+                                             compute_diff='gradients')
     image_resolution = (img_dataset[0].shape[1], img_dataset[0].shape[0])
     # image_resolution = (256, 256)
 

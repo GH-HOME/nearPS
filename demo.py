@@ -198,7 +198,7 @@ class PoissonEqn(Dataset):
 
 
 class NormalMap(Dataset):
-    def __init__(self, normal_path):
+    def __init__(self, normal_path, depth_path):
         super().__init__()
 
         N = np.load(normal_path)
@@ -207,10 +207,14 @@ class NormalMap(Dataset):
         grads_x = - Nx / Nz
         grads_y = - Ny / Nz
 
+        depth = np.load(depth_path)
+
         # Compute gradient and laplacian
         grads_x, grads_y = torch.from_numpy(grads_x), torch.from_numpy(grads_y)
+        depth = torch.from_numpy(depth)
 
         self.grads = torch.stack((grads_x, grads_y), dim=-1).view(-1, 2)
+        self.depth = depth.view(-1, 1)
         sidelength = N.shape[0]
         self.coords = get_mgrid(sidelength, 2)
 
@@ -218,7 +222,7 @@ class NormalMap(Dataset):
         return 1
 
     def __getitem__(self, idx):
-        return self.coords, {'grads': self.grads}
+        return self.coords, {'grads': self.grads, 'depth': self.depth}
 
 
 def gradients_mse(model_output, coords, gt_gradients):
@@ -227,6 +231,15 @@ def gradients_mse(model_output, coords, gt_gradients):
     # compare them with the ground-truth
     gradients_loss = torch.mean((gradients - gt_gradients).pow(2).sum(-1))
     return gradients_loss
+
+
+def normal_depth_mse(model_output, coords, gt_gradients, gt_depth):
+    # compute gradients on the model
+    gradients = gradient(model_output, coords)
+    # compare them with the ground-truth
+    gradients_loss = torch.mean((gradients - gt_gradients).pow(2).sum(-1))
+    depth_loss = torch.mean((model_output - gt_depth).pow(2).sum(-1))
+    return depth_loss + gradients_loss
 
 
 def image_demo():
@@ -292,16 +305,21 @@ def image_demo():
 
 def possion_demo():
     N_gt_path = r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\normal.npy'
+    depth_gt_path = r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\depth.npy'
     N_gt = np.load(N_gt_path)
-    h, w, _ = N_gt.shape
-    N_map_data = NormalMap(N_gt_path)
-    dataloader = DataLoader(N_map_data, batch_size=1, pin_memory=True, num_workers=0)
+    # h, w, _ = N_gt.shape
+    # N_map_data = NormalMap(N_gt_path, depth_gt_path)
+
+    from dataio import SurfaceTent
+    SurfaceTent_data = SurfaceTent(50)
+    h, w = 50, 50
+    dataloader = DataLoader(SurfaceTent_data, batch_size=1, pin_memory=True, num_workers=0)
 
     poisson_siren = Siren(in_features=2, out_features=1, hidden_features=256,
                           hidden_layers=3, outermost_linear=True)
     poisson_siren.cuda()
 
-    total_steps = 1000
+    total_steps = 10000
     steps_til_summary = 50
 
     optim = torch.optim.Adam(lr=1e-4, params=poisson_siren.parameters())
@@ -314,7 +332,7 @@ def possion_demo():
         start_time = time.time()
 
         model_output, coords = poisson_siren(model_input)
-        train_loss = gradients_mse(model_output, coords, gt['grads'])
+        train_loss = normal_depth_mse(model_output, coords, gt['grads'], gt['depth'])
 
         if not step % steps_til_summary:
             print("Step %d, Total loss %0.6f, iteration time %0.6f" % (step, train_loss, time.time() - start_time))
@@ -325,16 +343,16 @@ def possion_demo():
             zy = zxzy[:, :, 1]
             N_est = np.array([-zx, -zy, np.ones_like(zx)]).transpose([1, 2, 0])
             N_est = N_est / np.linalg.norm(N_est, axis=2, keepdims=True)
+            N_gt = SurfaceTent_data.n
             from hutils.PhotometricStereoUtil import evalsurfaceNormal
             Error_map, MAE, MedianE = evalsurfaceNormal(N_est, N_gt, np.ones_like(zx).astype(np.bool))
             print(MAE)
 
             fig, axes = plt.subplots(1, 3, figsize=(18, 6))
-            axes[0].imshow(model_output.cpu().view(h, w).detach().numpy())
+            axes[0].imshow(Error_map)
             axes[1].imshow(N_est/2 + 0.5)
             axes[2].imshow(N_gt / 2 + 0.5)
-            print(zxzy.shape)
-            # axes[1].imshow()
+
 
             plt.show()
 
