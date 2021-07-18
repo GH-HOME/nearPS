@@ -94,7 +94,7 @@ def map_depth_map_to_point_clouds(depth_map, mask, K):
     return p_tilde * depth_map[mask, np.newaxis]
 
 
-def scatter_3D_default_view(obj_path = None, mesh = None, img_name = None, window_size = [512, 384]):
+def scatter_3D_default_view(obj_path = None, mesh = None, img_name = None, window_size = [512, 384], title = None):
     """ save the screen shot of obj files in the same view point"""
 
     # specular parameter
@@ -104,6 +104,7 @@ def scatter_3D_default_view(obj_path = None, mesh = None, img_name = None, windo
     p = pv.Plotter(border=False)
 
     p.set_background(color="white")
+
     if mesh is None and obj_path is not None:
         mesh = pv.read(obj_path)
 
@@ -118,7 +119,11 @@ def scatter_3D_default_view(obj_path = None, mesh = None, img_name = None, windo
                  specular=specular_value,
                  show_scalar_bar=False,
                  show_axes=False,
-                 window_size = window_size)
+                 window_size = window_size,
+                 text = title)
+
+    # if title is not None:
+    #     p.add_title(title, font_size=24)
 
     pv.close_all()
     if img_name is not None:
@@ -128,7 +133,7 @@ def scatter_3D_default_view(obj_path = None, mesh = None, img_name = None, windo
 
 
 
-def generate_mesh(depth_map, mask, img_name, step_size, window_size):
+def generate_mesh(depth_map, mask, img_name, step_size, window_size, title):
     """
     Normal: [N, 3]
     pointcloud: [N, 3]
@@ -137,7 +142,7 @@ def generate_mesh(depth_map, mask, img_name, step_size, window_size):
     facets = construct_facets_from_depth_map_mask(mask)
     vertices = construct_vertices_from_depth_map_and_mask(mask, depth_map, step_size)
     surface = pv.PolyData(vertices, facets)
-    scatter_3D_default_view(mesh = surface, img_name = img_name, window_size = window_size)
+    scatter_3D_default_view(mesh = surface, img_name = img_name, window_size = window_size, title = title)
 
 
 if __name__ == "__main__":
@@ -145,4 +150,4 @@ if __name__ == "__main__":
     depth = np.load(r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\depth.npy')
     # mask = np.load(r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\mask.npy')
     mask = np.ones_like(depth).astype(np.bool)
-    generate_mesh(depth, mask, None, 1/128, np.array([1000, 1000]))
+    generate_mesh(depth, mask, 'test.png', 1/128, np.array([1000, 1000]), title = 'test')

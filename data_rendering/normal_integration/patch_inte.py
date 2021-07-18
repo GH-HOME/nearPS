@@ -119,9 +119,9 @@ if __name__ == '__main__':
     # [0.00234301 0.00297627 0.0057204  0.00752655 0.00024565]
     # coe = np.array([0, 0, 1, 0, 0])
     print(coe)
-    radius = 128
-    # N_gt, point_cloud = generate_poly_surface_unit_coord(coe, radius)
-    N_gt, point_cloud = generate_SurfaceTest(radius)
+    radius = 64
+    N_gt, point_cloud = generate_poly_surface_unit_coord(coe, radius)
+    # N_gt, point_cloud = generate_SurfaceTest(radius)
 
     LEDs = generate_LEDs(0.5, 2, 2, 3)
     # LEDs = generate_LEDs(0.7, 1, 1, 3)

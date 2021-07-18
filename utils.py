@@ -340,7 +340,7 @@ def write_image_summary(image_resolution, model, model_input, gt,
 
     from hutils.fileio import createDir
     from hutils.PhotometricStereoUtil import evalsurfaceNormal, evaldepth
-    from hutils.visualization import plt_error_map_cv2, save_normal_no_margin, N_2_N_show, plt_error_map
+    from hutils.visualization import plt_error_map_cv2, save_normal_no_margin, N_2_N_show, plt_error_map, save_plt_fig_with_title
 
     save_folder = kwargs['save_folder']
     N_gt_path = kwargs['N_gt_path']
@@ -377,23 +377,25 @@ def write_image_summary(image_resolution, model, model_input, gt,
         print('iter_{}_ang_err_{:.2f}'.format(total_steps, mae))
         # writer.add_image(prefix + 'ang_err_vmax_{}'.format(vmaxN), err_img, global_step=total_steps)
 
-    save_normal_no_margin(normal_dir, mask, os.path.join(save_folder, 'iter_{}_N_est.png'.format(total_steps)))
+    # save_normal_no_margin(normal_dir, mask, os.path.join(save_folder, 'iter_{}_N_est.png'.format(total_steps)))
+    plt.imshow(N_2_N_show(normal_dir, mask))
+    save_plt_fig_with_title(os.path.join(save_folder, 'iter_{}_N_est.png'.format(total_steps)), 'iter_{}'.format(total_steps))
     # writer.add_image(prefix + 'Normal_est', N_2_N_show(normal_dir), global_step=total_steps)
 
 
     if depth_gt_path is not None:
         depth_gt = np.load(depth_gt_path)
         error_map, mabse, _ = evaldepth(depth_est, depth_gt, mask = mask)
-        img_path = os.path.join(save_folder, 'iter_{}_abs_err_{:.2f}.png'.format(total_steps, mabse))
+        img_path = os.path.join(save_folder, 'iter_{}_abs_err_{:.2e}.png'.format(total_steps, mabse))
         plt_error_map(error_map, mask, vmax=vmaxD, withbar=True,
-                      title='iter_{}_abs_err_{:.2f}'.format(total_steps, mabse), img_path=img_path)
+                      title='iter_{}_abs_err_{:.2e}'.format(total_steps, mabse), img_path=img_path)
         # err_img = plt_error_map_cv2(error_map, mask, vmin=0, vmax=vmaxD)
-        print('iter_{}_abs_err_{:.2f}'.format(total_steps, mabse))
+        print('iter_{}_abs_err_{:.2e}'.format(total_steps, mabse))
         # writer.add_image(prefix + 'ang_err_vmax_{}'.format(vmaxD), err_img, global_step=total_steps)
 
     shape_file_name = os.path.join(save_folder, 'iter_{}_Z_est.png'.format(total_steps))
     from hutils.draw_3D import generate_mesh
-    generate_mesh(depth_est, mask, shape_file_name, step_size = 2 / h, window_size = (1024, 768))
+    generate_mesh(depth_est, mask, shape_file_name, step_size = 2 / h, window_size = (1024, 768), title = 'iter_{}'.format(total_steps))
     # writer.add_image(prefix + 'Depth_est', depth_est, global_step=total_steps)
 
 
