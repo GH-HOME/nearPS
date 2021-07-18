@@ -1,23 +1,13 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import os
-from hutils.visualization import scatter_3d, save_normal_no_margin, plt_error_map_cv2
+from hutils.visualization import scatter_3d, save_normal_no_margin, plt_error_map_cv2, create_gif
 from hutils.PhotometricStereoUtil import evalsurfaceNormal
 import cv2
 import matplotlib.ticker as ticker
 from hutils.fileio import createDir
 import matplotlib.animation as animation
 
-def create_gif(imgs, save_path):
-    ims = []
-    fig = plt.figure()
-    for i in range(len(imgs)):
-            im = plt.imshow(imgs[i], animated=True, cmap = plt.cm.gray)
-            plt.axis('off')
-            ims.append([im])
-
-    ani = animation.ArtistAnimation(fig, ims, interval=200, blit=True, repeat_delay=1000)
-    ani.save(save_path, writer='pillow', dpi=300)
 
 def fmt(x, pos):
     a, b = '{:.3e}'.format(x).split('e')
@@ -60,7 +50,7 @@ def generate_Sphere(coe, radius):
     xx, yy = np.meshgrid(np.linspace(-1, 1, patch_size), np.linspace(-1, 1, patch_size))
     yy = np.flip(yy, axis=0)
 
-    sphere_radius = 1
+    sphere_radius = 0.99
     zz = np.sqrt((sphere_radius) ** 2 - xx ** 2 - yy ** 2)
     mask = ~np.isnan(zz)
     zz[~mask] = 0
@@ -160,7 +150,7 @@ if __name__ == '__main__':
     img_set = []
     LEDs = LEDs.reshape(-1, 3)
     for LED_loc in LEDs:
-        img = render_one_LED(N_gt, point_cloud, LED_loc, attach_shadow=True)
+        img = render_one_LED(N_gt, point_cloud, LED_loc, attach_shadow=True, mask = mask)
         img_set.append(img)
 
     out_dir = './poly2d'
@@ -170,4 +160,5 @@ if __name__ == '__main__':
     np.save(os.path.join(out_dir, 'depth.npy'), point_cloud[:, :, 2])
     np.save(os.path.join(out_dir, 'LEDs.npy'), LEDs)
     np.save(os.path.join(out_dir, 'img_set.npy'), np.array(img_set))
-    create_gif(img_set, os.path.join(out_dir, 'show.gif'))
+    np.save(os.path.join(out_dir, 'mask.npy'), np.array(mask))
+    create_gif(img_set, os.path.join(out_dir, 'show.gif'), mask)
