@@ -282,8 +282,8 @@ def render_NL_img_mse(mask, model_output, gt):
     img = light_falloff * attach_shadow(shading) * 1e1
     # img = light_falloff * shading * 1e5
 
-    # normal_loss = 1 - F.cosine_similarity(normal_dir, gt['normal_gt'], dim=-1)[..., None]
-    # depth_loss = ((zz - gt['depth_gt']) ** 2)
+    normal_loss = 1 - F.cosine_similarity(normal_dir, gt['normal_gt'], dim=-1)[..., None]
+    depth_loss = ((zz - gt['depth_gt']) ** 2)
     img_loss = ((img - gt['img']) ** 2)
     if mask is None:
         return {'img_loss':  (img_loss+depth_loss + normal_loss).mean()}

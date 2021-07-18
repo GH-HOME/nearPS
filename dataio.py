@@ -40,6 +40,28 @@ def get_mgrid(sidelen, dim=2):
     return pixel_coords
 
 
+def get_mgrid_xx_yy(sidelen, dim=2):
+    '''Generates a flattened grid of (x,y,...) coordinates in a range of -1 to 1.'''
+    if isinstance(sidelen, int):
+        sidelen = dim * (sidelen,)
+
+    if dim == 2:
+        row, column = sidelen[0], sidelen[1]
+        yy, xx = np.mgrid[:row, :column]
+        yy = np.flip(yy, axis=0)
+        pixel_coords = np.stack([xx, yy], axis=-1)[None, ...].astype(np.float32) ## -yy, xx
+        pixel_coords[0, :, :, 0] = pixel_coords[0, :, :, 0] / (sidelen[0] - 1) #xx
+        pixel_coords[0, :, :, 1] = pixel_coords[0, :, :, 1] / (sidelen[1] - 1)
+    else:
+        raise NotImplementedError('Not implemented for dim=%d' % dim)
+
+    pixel_coords -= 0.5
+    pixel_coords *= 2.
+    pixel_coords = torch.Tensor(pixel_coords).view(-1, dim)
+    return pixel_coords
+
+
+
 def lin2img(tensor, image_resolution=None):
     batch_size, num_samples, channels = tensor.shape
     if image_resolution is None:
@@ -715,7 +737,7 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
 
         self.compute_diff = compute_diff
         self.dataset = dataset
-        self.mgrid = get_mgrid(sidelength)
+        self.mgrid = get_mgrid_xx_yy(sidelength)
 
     def __len__(self):
         return len(self.dataset)

@@ -32,7 +32,7 @@ p.add_argument('--downsample', action='store_true', default=False, help='use ima
 
 p.add_argument('--epochs_til_ckpt', type=int, default=25,
                help='Time interval in seconds until checkpoint is saved.')
-p.add_argument('--steps_til_summary', type=int, default=1000,
+p.add_argument('--steps_til_summary', type=int, default=100,
                help='Time interval in seconds until tensorboard summary is saved.')
 
 p.add_argument('--dataset', type=str, default='custom',

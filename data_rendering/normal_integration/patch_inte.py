@@ -27,7 +27,7 @@ def fmt(x, pos):
 def generate_poly_surface_unit_coord(coe, radius):
 
     patch_size = 2 * radius + 1
-    yy, xx = np.meshgrid(np.linspace(-1, 1, patch_size), np.linspace(-1, 1, patch_size))
+    xx, yy = np.meshgrid(np.linspace(-1, 1, patch_size), np.linspace(-1, 1, patch_size))
     yy = np.flip(yy, axis=0)
     zz = coe[0] * xx * xx + coe[1] * yy * yy + coe[2] *xx * yy + coe[3] * xx + coe[4] * yy + coe[5]
     dx = 2 * coe[0] * xx + coe[2] * yy + coe[3]
@@ -119,7 +119,7 @@ if __name__ == '__main__':
     # [0.00234301 0.00297627 0.0057204  0.00752655 0.00024565]
     # coe = np.array([0, 0, 1, 0, 0])
     print(coe)
-    radius = 128
+    radius = 75
     N_gt, point_cloud = generate_poly_surface_unit_coord(coe, radius)
     # N_gt, point_cloud = generate_SurfaceTest(radius)
 
