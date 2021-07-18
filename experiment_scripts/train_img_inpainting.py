@@ -32,7 +32,7 @@ p.add_argument('--downsample', action='store_true', default=False, help='use ima
 
 p.add_argument('--epochs_til_ckpt', type=int, default=25,
                help='Time interval in seconds until checkpoint is saved.')
-p.add_argument('--steps_til_summary', type=int, default=100,
+p.add_argument('--steps_til_summary', type=int, default=500,
                help='Time interval in seconds until tensorboard summary is saved.')
 
 p.add_argument('--dataset', type=str, default='custom',
@@ -74,7 +74,7 @@ dataloader = DataLoader(coord_dataset, shuffle=True, batch_size=opt.batch_size, 
 
 # Define the model.
 if opt.model_type == 'sine' or opt.model_type == 'relu' or opt.model_type == 'tanh':
-    model = modules.SingleBVPNet(type=opt.model_type, mode='mlp', out_features=img_dataset.img_channels, sidelength=image_resolution, num_hidden_layers = 2,
+    model = modules.SingleBVPNet(type=opt.model_type, mode='mlp', out_features=img_dataset.img_channels, sidelength=image_resolution, num_hidden_layers = 3,
                                  downsample=opt.downsample)
 
     # model = modules.Siren(in_features=2, out_features=1, hidden_features=256,
