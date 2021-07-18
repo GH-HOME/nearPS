@@ -34,11 +34,11 @@ def generate_poly_surface_unit_coord(coe, radius):
     dy = 2 * coe[1] * yy + coe[2] * xx + coe[4]
 
 
-    sphere_radius = 1.5
-    zz = np.sqrt((sphere_radius) ** 2 - xx ** 2 - yy ** 2)
-    zz = zz - zz.mean() + coe[5]
-    dx = -xx * np.power((sphere_radius) ** 2 - xx ** 2 - yy ** 2, -0.5)
-    dy = -yy * np.power((sphere_radius) ** 2 - xx ** 2 - yy ** 2, -0.5)
+    # sphere_radius = 1.5
+    # zz = np.sqrt((sphere_radius) ** 2 - xx ** 2 - yy ** 2)
+    # zz = zz - zz.mean() + coe[5]
+    # dx = -xx * np.power((sphere_radius) ** 2 - xx ** 2 - yy ** 2, -0.5)
+    # dy = -yy * np.power((sphere_radius) ** 2 - xx ** 2 - yy ** 2, -0.5)
 
     point_cloud = np.array([xx, yy, zz]).transpose([1, 2, 0])
 
@@ -119,7 +119,7 @@ if __name__ == '__main__':
     # [0.00234301 0.00297627 0.0057204  0.00752655 0.00024565]
     # coe = np.array([0, 0, 1, 0, 0])
     print(coe)
-    radius = 32
+    radius = 128
     N_gt, point_cloud = generate_poly_surface_unit_coord(coe, radius)
     # N_gt, point_cloud = generate_SurfaceTest(radius)
 
