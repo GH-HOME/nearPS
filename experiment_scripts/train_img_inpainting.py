@@ -2,7 +2,7 @@
 import sys
 import os
 sys.path.append( os.path.dirname( os.path.dirname( os.path.abspath(__file__) ) ) )
-
+from datetime import datetime
 import dataio, meta_modules, utils, training, loss_functions, modules
 
 from torch.utils.data import DataLoader
@@ -112,6 +112,15 @@ elif opt.prior == 'FH':
     loss_fn = partial(loss_functions.image_mse_FH_prior, mask.view(-1,1), opt.k1, model)
 summary_fn = partial(utils.write_image_summary, image_resolution)
 
+now = datetime.now() # current date and time
+date_time = now.strftime("%Y_%m_%d_%H_%M_%S")
+
+kwargs = {'save_folder': os.path.join(root_path, date_time),
+          'N_gt_path': opt.custom_normal,
+          'depth_gt_path': opt.custom_depth,
+          'vmaxND': [10, 1]}
+
+
 training.train(model=model, train_dataloader=dataloader, epochs=opt.num_epochs, lr=opt.lr,
                steps_til_summary=opt.steps_til_summary, epochs_til_checkpoint=opt.epochs_til_ckpt,
-               model_dir=root_path, loss_fn=loss_fn, summary_fn=summary_fn, use_lbfgs = False)
+               model_dir=root_path, loss_fn=loss_fn, summary_fn=summary_fn, use_lbfgs = False, kwargs = kwargs)

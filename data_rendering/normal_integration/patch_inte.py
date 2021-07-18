@@ -34,11 +34,11 @@ def generate_poly_surface_unit_coord(coe, radius):
     dy = 2 * coe[1] * yy + coe[2] * xx + coe[4]
 
 
-    # sphere_radius = 1.5
-    # zz = np.sqrt((sphere_radius) ** 2 - xx ** 2 - yy ** 2)
-    # zz = zz - zz.mean() + coe[5]
-    # dx = -xx * np.power((sphere_radius) ** 2 - xx ** 2 - yy ** 2, -0.5)
-    # dy = -yy * np.power((sphere_radius) ** 2 - xx ** 2 - yy ** 2, -0.5)
+    sphere_radius = 1.5
+    zz = np.sqrt((sphere_radius) ** 2 - xx ** 2 - yy ** 2)
+    zz = zz - zz.mean() + coe[5]
+    dx = -xx * np.power((sphere_radius) ** 2 - xx ** 2 - yy ** 2, -0.5)
+    dy = -yy * np.power((sphere_radius) ** 2 - xx ** 2 - yy ** 2, -0.5)
 
     point_cloud = np.array([xx, yy, zz]).transpose([1, 2, 0])
 
@@ -112,7 +112,7 @@ def generate_LEDs(radius, numx, numy, z):
 if __name__ == '__main__':
 
     coe = np.random.random(6) /2
-    coe[5] = -3
+    coe[5] = 0
     # coe[3:] = 0
 
     # coe = np.array([1, 2,  3, -5, -8])
@@ -124,7 +124,7 @@ if __name__ == '__main__':
     # N_gt, point_cloud = generate_SurfaceTest(radius)
 
     # LEDs = generate_LEDs(0.5, 2, 2, 3)
-    LEDs = generate_LEDs(0.7, 1, 1, 0)
+    LEDs = generate_LEDs(0.7, 1, 1, 3)
     img_set = []
     LEDs = LEDs.reshape(-1, 3)
     for LED_loc in LEDs:

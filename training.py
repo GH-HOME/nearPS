@@ -12,7 +12,7 @@ import shutil
 
 
 def train(model, train_dataloader, epochs, lr, steps_til_summary, epochs_til_checkpoint, model_dir, loss_fn,
-          summary_fn, val_dataloader=None, double_precision=False, clip_grad=False, use_lbfgs=False, loss_schedules=None):
+          summary_fn, val_dataloader=None, double_precision=False, clip_grad=False, use_lbfgs=False, loss_schedules=None, kwargs=None):
 
     optim = torch.optim.Adam(lr=lr, params=model.parameters())
 
@@ -89,7 +89,8 @@ def train(model, train_dataloader, epochs, lr, steps_til_summary, epochs_til_che
                 if not total_steps % steps_til_summary:
                     torch.save(model.state_dict(),
                                os.path.join(checkpoints_dir, 'model_current.pth'))
-                    summary_fn(model, model_input, gt, model_output, writer, total_steps)
+
+                    summary_fn(model, model_input, gt, model_output, writer, total_steps, kwargs=kwargs)
 
                 if not use_lbfgs:
                     optim.zero_grad()

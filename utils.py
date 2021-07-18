@@ -332,12 +332,27 @@ def write_video_summary(vid_dataset, model, model_input, gt, model_output, write
 
 
 def write_image_summary(image_resolution, model, model_input, gt,
-                        model_output, writer, total_steps, prefix='train_'):
-    gt_img = dataio.lin2img(gt['img'], image_resolution)
-    pred_img = dataio.lin2img(model_output['model_out'], image_resolution)
+                        model_output, writer, total_steps, prefix='train_', kwargs = None):
+
+    #######################################################
+    # 1. save normal in color png, save angular error map, save depth 2 3D surface
+    #######################################################
+
+    from hutils.fileio import createDir
+    from hutils.PhotometricStereoUtil import evalsurfaceNormal, evaldepth
+    from hutils.visualization import plt_error_map_cv2, save_normal_no_margin, N_2_N_show, plt_error_map
+
+    save_folder = kwargs['save_folder']
+    N_gt_path = kwargs['N_gt_path']
+    depth_gt_path = kwargs['depth_gt_path']
+    vmaxN, vmaxD = kwargs['vmaxND']
+
+    createDir(save_folder)
+
+    h, w = image_resolution
+    depth_est = model_output['model_out'].detach().cpu().numpy().reshape(h, w)
 
     img_gradient = diff_operators.gradient(model_output['model_out'], model_output['model_in'])
-    img_laplace = diff_operators.laplace(model_output['model_out'], model_output['model_in'])
 
     dx, dy = img_gradient[:, :, 0], img_gradient[:, :, 1]
     nx = - dx.unsqueeze(2)
@@ -347,55 +362,39 @@ def write_image_summary(image_resolution, model, model_input, gt,
     N_norm = torch.norm(normal_set, p=2, dim=2)
     normal_dir = normal_set / N_norm.unsqueeze(2)
     normal_dir = normal_dir.detach().cpu().numpy()
-    N_gt = np.load(r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\normal.npy')
-    h, w, _ = N_gt.shape
-    from hutils.PhotometricStereoUtil import evaluate_angular_error, evalsurfaceNormal
-    error_map, mae, _ = evalsurfaceNormal(normal_dir.squeeze().reshape(h, w, 3), N_gt, mask = np.ones([h, w]).astype(np.bool))
+    normal_dir = normal_dir.squeeze().reshape(h, w, 3)
 
-    print('MAE: ', mae)
-    plt.imshow(normal_dir.squeeze().reshape(h, w, 3) / 2 + 0.5)
-    plt.show()
+    mask = np.ones([h, w]).astype(np.bool)
 
-    plt.imshow(error_map)
-    plt.colorbar()
-    plt.show()
+    if N_gt_path is not None:
+        N_gt = np.load(N_gt_path)
+        error_map, mae, _ = evalsurfaceNormal(normal_dir, N_gt, mask = mask)
+        img_path = os.path.join(save_folder, 'iter_{}_ang_err_{:.2f}.png'.format(total_steps, mae))
+        plt_error_map(error_map, mask, vmax = vmaxN, withbar=True,
+                      title = 'iter_{}_ang_err_{:.2f}'.format(total_steps, mae), img_path = img_path)
+        # err_img = plt_error_map_cv2(error_map, mask, vmin=0, vmax=vmaxN)
+        # cv2.imwrite(img_path, err_img)
+        print('iter_{}_ang_err_{:.2f}'.format(total_steps, mae))
+        # writer.add_image(prefix + 'ang_err_vmax_{}'.format(vmaxN), err_img, global_step=total_steps)
 
-    plt.imshow(model_output['model_out'].detach().cpu().numpy().reshape(h, w), cmap = plt.cm.jet)
-    plt.title('depth')
-
-    plt.show()
-
-
-    output_vs_gt = torch.cat((gt_img, pred_img), dim=-1)
-    writer.add_image(prefix + 'gt_vs_pred', make_grid(output_vs_gt, scale_each=False, normalize=True),
-                     global_step=total_steps)
-
-    pred_img = dataio.rescale_img((pred_img+1)/2, mode='clamp').permute(0,2,3,1).squeeze(0).detach().cpu().numpy()
-    pred_grad = dataio.grads2img(dataio.lin2img(img_gradient)).permute(1,2,0).squeeze().detach().cpu().numpy()
-    pred_lapl = cv2.cvtColor(cv2.applyColorMap(dataio.to_uint8(dataio.rescale_img(
-                             dataio.lin2img(img_laplace), perc=2).permute(0,2,3,1).squeeze(0).detach().cpu().numpy()), cmapy.cmap('RdBu')), cv2.COLOR_BGR2RGB)
-
-    gt_img = dataio.rescale_img((gt_img+1) / 2, mode='clamp').permute(0, 2, 3, 1).squeeze(0).detach().cpu().numpy()
-
-    writer.add_image(prefix + 'gt_img', torch.from_numpy(gt_img).permute(2, 0, 1), global_step=total_steps)
-    if 'gradients' in gt.keys():
-        gt_grad = dataio.grads2img(dataio.lin2img(gt['gradients'])).permute(1, 2, 0).squeeze().detach().cpu().numpy()
-        writer.add_image(prefix + 'gt_grad', torch.from_numpy(gt_grad).permute(2, 0, 1), global_step=total_steps)
-
-    if 'laplace' in gt.keys():
-        gt_lapl = cv2.cvtColor(cv2.applyColorMap(dataio.to_uint8(dataio.rescale_img(
-            dataio.lin2img(gt['laplace']), perc=2).permute(0, 2, 3, 1).squeeze(0).detach().cpu().numpy()), cmapy.cmap('RdBu')), cv2.COLOR_BGR2RGB)
-        writer.add_image(prefix + 'gt_lapl', torch.from_numpy(gt_lapl).permute(2, 0, 1), global_step=total_steps)
-
-    writer.add_image(prefix + 'pred_img', torch.from_numpy(pred_img).permute(2, 0, 1), global_step=total_steps)
-    writer.add_image(prefix + 'pred_grad', torch.from_numpy(pred_grad).permute(2, 0, 1), global_step=total_steps)
-    writer.add_image(prefix + 'pred_lapl', torch.from_numpy(pred_lapl).permute(2,0,1), global_step=total_steps)
+    save_normal_no_margin(normal_dir, mask, os.path.join(save_folder, 'iter_{}_N_est.png'.format(total_steps)))
+    # writer.add_image(prefix + 'Normal_est', N_2_N_show(normal_dir), global_step=total_steps)
 
 
+    if depth_gt_path is not None:
+        depth_gt = np.load(depth_gt_path)
+        error_map, mabse, _ = evaldepth(depth_est, depth_gt, mask = mask)
+        img_path = os.path.join(save_folder, 'iter_{}_abs_err_{:.2f}.png'.format(total_steps, mabse))
+        plt_error_map(error_map, mask, vmax=vmaxD, withbar=True,
+                      title='iter_{}_abs_err_{:.2f}'.format(total_steps, mabse), img_path=img_path)
+        # err_img = plt_error_map_cv2(error_map, mask, vmin=0, vmax=vmaxD)
+        print('iter_{}_abs_err_{:.2f}'.format(total_steps, mabse))
+        # writer.add_image(prefix + 'ang_err_vmax_{}'.format(vmaxD), err_img, global_step=total_steps)
 
-
-    write_psnr(dataio.lin2img(model_output['model_out'], image_resolution),
-               dataio.lin2img(gt['img'], image_resolution), writer, total_steps, prefix+'img_')
+    shape_file_name = os.path.join(save_folder, 'iter_{}_Z_est.png'.format(total_steps))
+    from hutils.draw_3D import generate_mesh
+    generate_mesh(depth_est, mask, shape_file_name, step_size = 2 / h, window_size = (1024, 768))
+    # writer.add_image(prefix + 'Depth_est', depth_est, global_step=total_steps)
 
 
 def write_laplace_summary(model, model_input, gt, model_output, writer, total_steps, prefix='train_'):
