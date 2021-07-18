@@ -332,7 +332,7 @@ def write_video_summary(vid_dataset, model, model_input, gt, model_output, write
 
 
 def write_image_summary(image_resolution, model, model_input, gt,
-                        model_output, writer, total_steps, prefix='train_', kwargs = None):
+                        model_output, writer, total_steps, prefix='train_', loss_val = 0, kwargs = None):
 
     #######################################################
     # 1. save normal in color png, save angular error map, save depth 2 3D surface
@@ -343,9 +343,10 @@ def write_image_summary(image_resolution, model, model_input, gt,
     from hutils.visualization import plt_error_map_cv2, save_normal_no_margin, N_2_N_show, plt_error_map, save_plt_fig_with_title
 
     save_folder = kwargs['save_folder']
-    N_gt_path = kwargs['N_gt_path']
-    depth_gt_path = kwargs['depth_gt_path']
+    N_gt = kwargs['N_gt']
+    depth_gt = kwargs['depth_gt']
     vmaxN, vmaxD = kwargs['vmaxND']
+    mask = kwargs['mask']
 
     createDir(save_folder)
 
@@ -364,10 +365,9 @@ def write_image_summary(image_resolution, model, model_input, gt,
     normal_dir = normal_dir.detach().cpu().numpy()
     normal_dir = normal_dir.squeeze().reshape(h, w, 3)
 
-    mask = np.ones([h, w]).astype(np.bool)
 
-    if N_gt_path is not None:
-        N_gt = np.load(N_gt_path)
+
+    if N_gt is not None:
         error_map, mae, _ = evalsurfaceNormal(normal_dir, N_gt, mask = mask)
         img_path = os.path.join(save_folder, 'iter_{}_ang_err_{:.2f}.png'.format(total_steps, mae))
         plt_error_map(error_map, mask, vmax = vmaxN, withbar=True,
@@ -379,12 +379,11 @@ def write_image_summary(image_resolution, model, model_input, gt,
 
     # save_normal_no_margin(normal_dir, mask, os.path.join(save_folder, 'iter_{}_N_est.png'.format(total_steps)))
     plt.imshow(N_2_N_show(normal_dir, mask))
-    save_plt_fig_with_title(os.path.join(save_folder, 'iter_{}_N_est.png'.format(total_steps)), 'iter_{}'.format(total_steps))
+    save_plt_fig_with_title(os.path.join(save_folder, 'iter_{}_N_est.png'.format(total_steps)), 'iter_{} \t loss_{:2e}'.format(total_steps, loss_val))
     # writer.add_image(prefix + 'Normal_est', N_2_N_show(normal_dir), global_step=total_steps)
 
 
-    if depth_gt_path is not None:
-        depth_gt = np.load(depth_gt_path)
+    if depth_gt is not None:
         error_map, mabse, _ = evaldepth(depth_est, depth_gt, mask = mask)
         img_path = os.path.join(save_folder, 'iter_{}_abs_err_{:.2e}.png'.format(total_steps, mabse))
         plt_error_map(error_map, mask, vmax=vmaxD, withbar=True,
@@ -395,7 +394,7 @@ def write_image_summary(image_resolution, model, model_input, gt,
 
     shape_file_name = os.path.join(save_folder, 'iter_{}_Z_est.png'.format(total_steps))
     from hutils.draw_3D import generate_mesh
-    generate_mesh(depth_est, mask, shape_file_name, step_size = 2 / h, window_size = (1024, 768), title = 'iter_{}'.format(total_steps))
+    generate_mesh(depth_est, mask, shape_file_name, step_size = 2 / h, window_size = (1024, 768), title = 'iter_{} \t loss_{:2e}'.format(total_steps, loss_val))
     # writer.add_image(prefix + 'Depth_est', depth_est, global_step=total_steps)
 
 

@@ -64,7 +64,7 @@ if opt.dataset == 'camera_downsampled':
     coord_dataset = dataio.Implicit2DWrapper(img_dataset, sidelength=256, compute_diff='all')
     image_resolution = (256, 256)
 if opt.dataset == 'custom':
-    img_dataset = dataio.Shading_LEDNPY(opt.custom_image, opt.custom_LEDs, opt.custom_normal, opt.custom_depth)
+    img_dataset = dataio.Shading_LEDNPY(opt.custom_image, opt.custom_LEDs, opt.custom_mask, opt.custom_normal, opt.custom_depth)
     # img_dataset = dataio.SurfaceTent(128)
     image_resolution = (img_dataset[0]['img'].shape[1], img_dataset[0]['img'].shape[0])
     coord_dataset = dataio.Implicit2DWrapper(img_dataset, image_resolution, compute_diff='gradients')
@@ -75,7 +75,7 @@ dataloader = DataLoader(coord_dataset, shuffle=True, batch_size=opt.batch_size, 
 
 # Define the model.
 if opt.model_type == 'sine' or opt.model_type == 'relu' or opt.model_type == 'tanh':
-    model = modules.SingleBVPNet(type=opt.model_type, mode='mlp', out_features=img_dataset.img_channels, sidelength=image_resolution, num_hidden_layers = 3,
+    model = modules.SingleBVPNet(type=opt.model_type, mode='mlp', out_features=1, sidelength=image_resolution, num_hidden_layers = 3,
                                  downsample=opt.downsample)
 
     # model = modules.Siren(in_features=2, out_features=1, hidden_features=256,
@@ -83,7 +83,7 @@ if opt.model_type == 'sine' or opt.model_type == 'relu' or opt.model_type == 'ta
 
     # model = modules.SingleBVPNet(type=opt.model_type, in_features=2)
 elif opt.model_type == 'rbf' or opt.model_type == 'nerf':
-    model = modules.SingleBVPNet(type='relu', mode=opt.model_type, out_features=img_dataset.img_channels, sidelength=image_resolution,
+    model = modules.SingleBVPNet(type='relu', mode=opt.model_type, out_features=1, sidelength=image_resolution,
                                  downsample=opt.downsample)
 else:
     raise NotImplementedError
@@ -94,8 +94,8 @@ model.cuda()
 
 root_path = os.path.join(opt.logging_root, opt.experiment_name)
 
-if opt.mask_path:
-    mask = Image.open(opt.mask_path)
+if opt.custom_mask:
+    mask = np.load(opt.custom_mask)
     mask = ToTensor()(mask)
     mask = mask.float().cuda()
     percentage = torch.sum(mask).cpu().numpy() / np.prod(mask.shape)
@@ -117,9 +117,10 @@ now = datetime.now() # current date and time
 date_time = now.strftime("%Y_%m_%d_%H_%M_%S")
 
 kwargs = {'save_folder': os.path.join(root_path, date_time),
-          'N_gt_path': opt.custom_normal,
-          'depth_gt_path': opt.custom_depth,
-          'vmaxND': [10, 1]}
+          'N_gt': np.load(opt.custom_normal),
+          'depth_gt': np.load(opt.custom_depth),
+          'vmaxND': [10, 1],
+          'mask': np.load(opt.custom_mask)}
 
 
 training.train(model=model, train_dataloader=dataloader, epochs=opt.num_epochs, lr=opt.lr,

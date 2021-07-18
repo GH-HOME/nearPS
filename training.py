@@ -90,7 +90,7 @@ def train(model, train_dataloader, epochs, lr, steps_til_summary, epochs_til_che
                     torch.save(model.state_dict(),
                                os.path.join(checkpoints_dir, 'model_current.pth'))
 
-                    summary_fn(model, model_input, gt, model_output, writer, total_steps, kwargs=kwargs)
+                    summary_fn(model, model_input, gt, model_output, writer, total_steps, loss_val = train_loss.detach().cpu().numpy(), kwargs=kwargs)
 
                 if not use_lbfgs:
                     optim.zero_grad()

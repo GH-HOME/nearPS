@@ -40,7 +40,7 @@ def get_mgrid(sidelen, dim=2):
     return pixel_coords
 
 
-def get_mgrid_xx_yy(sidelen, dim=2):
+def get_mgrid_xx_yy(sidelen, dim=2, mask = None):
     '''Generates a flattened grid of (x,y,...) coordinates in a range of -1 to 1.'''
     if isinstance(sidelen, int):
         sidelen = dim * (sidelen,)
@@ -57,6 +57,8 @@ def get_mgrid_xx_yy(sidelen, dim=2):
 
     pixel_coords -= 0.5
     pixel_coords *= 2.
+    if mask is not None:
+        pixel_coords = pixel_coords[:, mask, :]
     pixel_coords = torch.Tensor(pixel_coords).view(-1, dim)
     return pixel_coords
 
@@ -705,15 +707,16 @@ class AudioFile(Dataset):
 
 
 class Shading_LEDNPY(Dataset):
-    def __init__(self, img_paths, LED_path, normal_path, depth_path):
+    def __init__(self, img_paths, LED_path, mask_path, normal_path, depth_path):
         super().__init__()
 
         self.LED_set = np.load(LED_path)
         self.numFrames =  len(self.LED_set)
         self.imgs = np.load(img_paths)
-        self.img_channels = 1
+        self.img_channels = len(self.imgs)
         self.depth = np.load(depth_path)
         self.normal = np.load(normal_path)
+        self.mask = np.load(mask_path)
 
     def __len__(self):
         return self.numFrames
@@ -737,6 +740,7 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
 
         self.compute_diff = compute_diff
         self.dataset = dataset
+
         self.mgrid = get_mgrid_xx_yy(sidelength)
 
     def __len__(self):
@@ -755,20 +759,10 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         depth_gt = self.transform(depth_gt)
         normal_gt = self.transform(normal_gt)
 
-        if self.compute_diff == 'gradients':
-            # img *= 1e1
-            gradx = scipy.ndimage.sobel(img.numpy(), axis=1).squeeze(0)[..., None]
-            grady = scipy.ndimage.sobel(img.numpy(), axis=2).squeeze(0)[..., None]
-        elif self.compute_diff == 'laplacian':
-            img *= 1e4
-            laplace = scipy.ndimage.laplace(img.numpy()).squeeze(0)[..., None]
-        elif self.compute_diff == 'all':
-            gradx = scipy.ndimage.sobel(img.numpy(), axis=1).squeeze(0)[..., None]
-            grady = scipy.ndimage.sobel(img.numpy(), axis=2).squeeze(0)[..., None]
-            laplace = scipy.ndimage.laplace(img.numpy()).squeeze(0)[..., None]
 
-        img = img.permute(1, 2, 0).view(-1, self.dataset.img_channels)
-        depth_gt = depth_gt.permute(1, 2, 0).view(-1, self.dataset.img_channels)
+        # img = img.permute(1, 2, 0).view(-1, self.dataset.img_channels)
+        img = img.permute(1, 2, 0).view(-1, 1)
+        depth_gt = depth_gt.permute(1, 2, 0).view(-1, 1)
         normal_gt = normal_gt.permute(1, 2, 0).view(-1, 3)
 
         in_dict = {'idx': idx, 'coords': self.mgrid}
@@ -776,21 +770,6 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         # gt_dict = {'img': img, 'LED_loc': LED_loc}
         gt_dict = {'img': img, 'LED_loc': LED_loc, 'depth_gt':depth_gt, 'normal_gt':normal_gt}
 
-        if self.compute_diff == 'gradients':
-            gradients = torch.cat((torch.from_numpy(gradx).reshape(-1, 1),
-                                   torch.from_numpy(grady).reshape(-1, 1)),
-                                  dim=-1)
-            gt_dict.update({'gradients': gradients})
-
-        elif self.compute_diff == 'laplacian':
-            gt_dict.update({'laplace': torch.from_numpy(laplace).view(-1, 1)})
-
-        elif self.compute_diff == 'all':
-            gradients = torch.cat((torch.from_numpy(gradx).reshape(-1, 1),
-                                   torch.from_numpy(grady).reshape(-1, 1)),
-                                  dim=-1)
-            gt_dict.update({'gradients': gradients})
-            gt_dict.update({'laplace': torch.from_numpy(laplace).view(-1, 1)})
 
         return in_dict, gt_dict
 

@@ -96,7 +96,10 @@ def generate_SurfaceTest(radius):
     Normal_ana = n_s / np.linalg.norm(n_s, axis=2, keepdims=True)
     plt.imshow(Normal_ana/2 + 0.5)
     plt.show()
-    return Normal_ana, point_cloud
+
+    h, w, _ = Normal_ana.shape
+    mask = np.ones([h, w]).astype(np.bool)
+    return Normal_ana, point_cloud, mask
 
 def render_one_LED(Normal_ana, point_cloud, LED_loc, attach_shadow = True, mask = None):
 
@@ -142,8 +145,9 @@ if __name__ == '__main__':
     print(coe)
     radius = 64
     # N_gt, point_cloud = generate_poly_surface_unit_coord(coe, radius)
-    # N_gt, point_cloud = generate_SurfaceTest(radius)
-    N_gt, point_cloud, mask = generate_Sphere(coe, radius)
+    N_gt, point_cloud, mask = generate_SurfaceTest(radius)
+
+    # N_gt, point_cloud, mask = generate_Sphere(coe, radius)
 
     LEDs = generate_LEDs(0.5, 2, 2, 3)
     # LEDs = generate_LEDs(0.7, 1, 1, 3)
