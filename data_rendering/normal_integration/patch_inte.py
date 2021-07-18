@@ -29,23 +29,20 @@ def generate_poly_surface_unit_coord(coe, radius):
     patch_size = 2 * radius + 1
     yy, xx = np.meshgrid(np.linspace(-1, 1, patch_size), np.linspace(-1, 1, patch_size))
     yy = np.flip(yy, axis=0)
-    zz = coe[0] * xx * xx + coe[1] * yy * yy + coe[2] *xx * yy + coe[3] * xx + coe[4] * yy
+    zz = coe[0] * xx * xx + coe[1] * yy * yy + coe[2] *xx * yy + coe[3] * xx + coe[4] * yy + coe[5]
     dx = 2 * coe[0] * xx + coe[2] * yy + coe[3]
     dy = 2 * coe[1] * yy + coe[2] * xx + coe[4]
 
 
     sphere_radius = 1.5
     zz = np.sqrt((sphere_radius) ** 2 - xx ** 2 - yy ** 2)
-    zz = zz - zz.mean()
+    zz = zz - zz.mean() + coe[5]
     dx = -xx * np.power((sphere_radius) ** 2 - xx ** 2 - yy ** 2, -0.5)
     dy = -yy * np.power((sphere_radius) ** 2 - xx ** 2 - yy ** 2, -0.5)
-
-
 
     point_cloud = np.array([xx, yy, zz]).transpose([1, 2, 0])
 
     scatter_3d(point_cloud.reshape(-1, 3))
-
     dz = np.ones_like(dx) * (-1)
 
     Normal_ana = np.array([dx, dy, dz]).transpose([1, 2, 0])
@@ -57,7 +54,29 @@ def generate_poly_surface_unit_coord(coe, radius):
 
     return Normal_ana, point_cloud
 
+def generate_SurfaceTest(radius):
+    x = np.linspace(-1, 1, num=radius)
+    y = np.linspace(-1, 1, num=radius)
+    XX, YY = np.meshgrid(x, y)
+    YY = np.flip(YY, axis=0)
+    slope = 0.6
+    z = np.zeros_like(XX)
+    zx = np.zeros_like(XX)
+    zy = np.zeros_like(XX)
 
+    mask_top = np.logical_and.reduce((XX>-0.8, XX<0.8, YY>0, YY<0.8))
+    zy[mask_top] = -slope
+    z[mask_top] = 0.8 * slope -slope * YY[mask_top]
+    mask_bottom = np.logical_and.reduce((XX>-0.8, XX<0.8, YY<0, YY>-0.8))
+    zy[mask_bottom] = slope
+    z[mask_bottom] = 0.8 * slope + slope * YY[mask_bottom]
+
+    point_cloud = np.array([XX, YY, z]).transpose([1, 2, 0])
+    n_s = np.concatenate((-zx[..., None], -zy[..., None], np.ones_like(zx)[..., None]), axis=-1)
+    Normal_ana = n_s / np.linalg.norm(n_s, axis=2, keepdims=True)
+    plt.imshow(Normal_ana/2 + 0.5)
+    plt.show()
+    return Normal_ana, point_cloud
 
 def render_one_LED(Normal_ana, point_cloud, LED_loc, attach_shadow = True):
 
@@ -92,6 +111,7 @@ def generate_LEDs(radius, numx, numy, z):
 if __name__ == '__main__':
 
     coe = np.random.random(6)
+    coe[5] = 0
     # coe[3:] = 0
 
     # coe = np.array([1, 2,  3, -5, -8])
@@ -100,8 +120,9 @@ if __name__ == '__main__':
     print(coe)
     radius = 64
     N_gt, point_cloud = generate_poly_surface_unit_coord(coe, radius)
+    # N_gt, point_cloud = generate_SurfaceTest(radius)
 
-    LEDs = generate_LEDs(25, 1, 1, 250)
+    LEDs = generate_LEDs(0.5, 2, 2, 3)
     img_set = []
     LEDs = LEDs.reshape(-1, 3)
     for LED_loc in LEDs:
