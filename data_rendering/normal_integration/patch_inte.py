@@ -54,6 +54,35 @@ def generate_poly_surface_unit_coord(coe, radius):
 
     return Normal_ana, point_cloud
 
+def generate_Sphere(coe, radius):
+
+    patch_size = 2 * radius + 1
+    xx, yy = np.meshgrid(np.linspace(-1, 1, patch_size), np.linspace(-1, 1, patch_size))
+    yy = np.flip(yy, axis=0)
+
+    sphere_radius = 1
+    zz = np.sqrt((sphere_radius) ** 2 - xx ** 2 - yy ** 2)
+    mask = ~np.isnan(zz)
+    zz[~mask] = 0
+    zz = zz + coe[5]
+    dx = -xx * np.power((sphere_radius) ** 2 - xx ** 2 - yy ** 2, -0.5)
+    dy = -yy * np.power((sphere_radius) ** 2 - xx ** 2 - yy ** 2, -0.5)
+
+    point_cloud = np.array([xx, yy, zz]).transpose([1, 2, 0])
+
+    scatter_3d(point_cloud.reshape(-1, 3))
+    dz = np.ones_like(dx) * (-1)
+
+    Normal_ana = np.array([dx, dy, dz]).transpose([1, 2, 0])
+    Normal_ana[~mask] = 0
+    Normal_ana = -Normal_ana / np.linalg.norm(Normal_ana, axis=2, keepdims=True)
+
+    plt.imshow(Normal_ana/2 + 0.5)
+    plt.title('Normal map')
+    plt.show()
+
+    return Normal_ana, point_cloud, mask
+
 def generate_SurfaceTest(radius):
     x = np.linspace(-1, 1, num=radius)
     y = np.linspace(-1, 1, num=radius)
@@ -79,23 +108,25 @@ def generate_SurfaceTest(radius):
     plt.show()
     return Normal_ana, point_cloud
 
-def render_one_LED(Normal_ana, point_cloud, LED_loc, attach_shadow = True):
+def render_one_LED(Normal_ana, point_cloud, LED_loc, attach_shadow = True, mask = None):
 
     h, w, _ = Normal_ana.shape
     img = np.zeros([h, w])
+    if mask is None:
+        mask = np.ones([h, w]).astype(np.bool)
 
     for i in range(h):
         for j in range(w):
+            if mask[i, j]:
+                x_3d = point_cloud[i ,j]
+                n = Normal_ana[i, j]
+                light_falloff = 1.0 / np.square(np.linalg.norm(x_3d - LED_loc))
+                light_dir = (LED_loc - x_3d) / np.linalg.norm(x_3d - LED_loc)
+                pix = light_falloff * np.dot(n, light_dir) * 1e1
+                if attach_shadow:
+                    pix = np.maximum(pix, 0.0)
 
-            x_3d = point_cloud[i ,j]
-            n = Normal_ana[i, j]
-            light_falloff = 1.0 / np.square(np.linalg.norm(x_3d - LED_loc))
-            light_dir = (LED_loc - x_3d) / np.linalg.norm(x_3d - LED_loc)
-            pix = light_falloff * np.dot(n, light_dir) * 1e1
-            if attach_shadow:
-                pix = np.maximum(pix, 0.0)
-
-            img[i, j] = pix
+                img[i, j] = pix
 
     return img
 
@@ -120,8 +151,9 @@ if __name__ == '__main__':
     # coe = np.array([0, 0, 1, 0, 0])
     print(coe)
     radius = 64
-    N_gt, point_cloud = generate_poly_surface_unit_coord(coe, radius)
+    # N_gt, point_cloud = generate_poly_surface_unit_coord(coe, radius)
     # N_gt, point_cloud = generate_SurfaceTest(radius)
+    N_gt, point_cloud, mask = generate_Sphere(coe, radius)
 
     LEDs = generate_LEDs(0.5, 2, 2, 3)
     # LEDs = generate_LEDs(0.7, 1, 1, 3)
