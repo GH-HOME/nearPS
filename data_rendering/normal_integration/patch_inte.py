@@ -72,6 +72,7 @@ def generate_SurfaceTest(radius):
     z[mask_bottom] = 0.8 * slope + slope * YY[mask_bottom]
 
     point_cloud = np.array([XX, YY, z]).transpose([1, 2, 0])
+    scatter_3d(point_cloud.reshape(-1, 3))
     n_s = np.concatenate((-zx[..., None], -zy[..., None], np.ones_like(zx)[..., None]), axis=-1)
     Normal_ana = n_s / np.linalg.norm(n_s, axis=2, keepdims=True)
     plt.imshow(Normal_ana/2 + 0.5)
@@ -90,7 +91,7 @@ def render_one_LED(Normal_ana, point_cloud, LED_loc, attach_shadow = True):
             n = Normal_ana[i, j]
             light_falloff = 1.0 / np.square(np.linalg.norm(x_3d - LED_loc))
             light_dir = (LED_loc - x_3d) / np.linalg.norm(x_3d - LED_loc)
-            pix = light_falloff * np.dot(n, light_dir) * 1e5
+            pix = light_falloff * np.dot(n, light_dir) * 1e1
             if attach_shadow:
                 pix = np.maximum(pix, 0.0)
 
@@ -110,19 +111,20 @@ def generate_LEDs(radius, numx, numy, z):
 
 if __name__ == '__main__':
 
-    coe = np.random.random(6)
-    coe[5] = 0
+    coe = np.random.random(6) /2
+    coe[5] = -3
     # coe[3:] = 0
 
     # coe = np.array([1, 2,  3, -5, -8])
     # [0.00234301 0.00297627 0.0057204  0.00752655 0.00024565]
     # coe = np.array([0, 0, 1, 0, 0])
     print(coe)
-    radius = 64
+    radius = 32
     N_gt, point_cloud = generate_poly_surface_unit_coord(coe, radius)
     # N_gt, point_cloud = generate_SurfaceTest(radius)
 
-    LEDs = generate_LEDs(0.5, 2, 2, 3)
+    # LEDs = generate_LEDs(0.5, 2, 2, 3)
+    LEDs = generate_LEDs(0.7, 1, 1, 0)
     img_set = []
     LEDs = LEDs.reshape(-1, 3)
     for LED_loc in LEDs:

@@ -47,7 +47,11 @@ p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained mo
 p.add_argument('--mask_path', type=str, default=None, help='Path to mask image')
 p.add_argument('--custom_image', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\img_set.npy', help='Path to single training image')
 p.add_argument('--custom_LEDs', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\LEDs.npy', help='Path to LED location')
+p.add_argument('--custom_depth', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\depth.npy', help='Path to LED location')
+p.add_argument('--custom_normal', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\normal.npy', help='Path to LED location')
 opt = p.parse_args()
+
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 if opt.dataset == 'camera':
@@ -59,7 +63,7 @@ if opt.dataset == 'camera_downsampled':
     coord_dataset = dataio.Implicit2DWrapper(img_dataset, sidelength=256, compute_diff='all')
     image_resolution = (256, 256)
 if opt.dataset == 'custom':
-    img_dataset = dataio.Shading_LEDNPY(opt.custom_image, opt.custom_LEDs)
+    img_dataset = dataio.Shading_LEDNPY(opt.custom_image, opt.custom_LEDs, opt.custom_normal, opt.custom_depth)
     # img_dataset = dataio.SurfaceTent(128)
     image_resolution = (img_dataset[0]['img'].shape[1], img_dataset[0]['img'].shape[0])
     coord_dataset = dataio.Implicit2DWrapper(img_dataset, image_resolution, compute_diff='gradients')
@@ -82,6 +86,9 @@ elif opt.model_type == 'rbf' or opt.model_type == 'nerf':
                                  downsample=opt.downsample)
 else:
     raise NotImplementedError
+
+# model= torch.nn.DataParallel(model,device_ids = [1])
+# model.to(device)
 model.cuda()
 
 root_path = os.path.join(opt.logging_root, opt.experiment_name)
@@ -107,4 +114,4 @@ summary_fn = partial(utils.write_image_summary, image_resolution)
 
 training.train(model=model, train_dataloader=dataloader, epochs=opt.num_epochs, lr=opt.lr,
                steps_til_summary=opt.steps_til_summary, epochs_til_checkpoint=opt.epochs_til_ckpt,
-               model_dir=root_path, loss_fn=loss_fn, summary_fn=summary_fn)
+               model_dir=root_path, loss_fn=loss_fn, summary_fn=summary_fn, use_lbfgs = False)

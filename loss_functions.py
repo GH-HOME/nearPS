@@ -279,10 +279,13 @@ def render_NL_img_mse(mask, model_output, gt):
 
     shading =  torch.sum(light_dir * normal_dir, dim=2, keepdims=True)
     attach_shadow = torch.nn.ReLU()
-    img = light_falloff * attach_shadow(shading) * 1e5
+    img = light_falloff * attach_shadow(shading) * 1e1
     # img = light_falloff * shading * 1e5
 
+    # normal_loss = 1 - F.cosine_similarity(normal_dir, gt['normal_gt'], dim=-1)[..., None]
+    # depth_loss = ((zz - gt['depth_gt']) ** 2)
+    img_loss = ((img - gt['img']) ** 2)
     if mask is None:
-        return {'img_loss': ((img - gt['img']) ** 2).mean()}
+        return {'img_loss':  (img_loss+depth_loss + normal_loss).mean()}
     else:
-        return {'img_loss': (mask * (img - gt['img']) ** 2).mean()}
+        return {'img_loss': (mask * (img_loss)).mean()}

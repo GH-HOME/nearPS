@@ -683,19 +683,21 @@ class AudioFile(Dataset):
 
 
 class Shading_LEDNPY(Dataset):
-    def __init__(self, img_paths, LED_path):
+    def __init__(self, img_paths, LED_path, normal_path, depth_path):
         super().__init__()
 
         self.LED_set = np.load(LED_path)
         self.numFrames =  len(self.LED_set)
         self.imgs = np.load(img_paths)
         self.img_channels = 1
+        self.depth = np.load(depth_path)
+        self.normal = np.load(normal_path)
 
     def __len__(self):
         return self.numFrames
 
     def __getitem__(self, idx):
-        return {'img': self.imgs[idx], 'LED_loc': self.LED_set[idx]}
+        return {'img': self.imgs[idx], 'LED_loc': self.LED_set[idx], 'depth_gt':self.depth, 'normal_gt':self.normal}
 
 
 class Implicit2DWrapper(torch.utils.data.Dataset):
@@ -727,6 +729,10 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         img = self.transform(img)
         LED_loc = torch.tensor(LED_loc)
 
+        depth_gt, normal_gt = data['depth_gt'], data['normal_gt']
+        depth_gt = self.transform(depth_gt)
+        normal_gt = self.transform(normal_gt)
+
         if self.compute_diff == 'gradients':
             # img *= 1e1
             gradx = scipy.ndimage.sobel(img.numpy(), axis=1).squeeze(0)[..., None]
@@ -740,10 +746,13 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
             laplace = scipy.ndimage.laplace(img.numpy()).squeeze(0)[..., None]
 
         img = img.permute(1, 2, 0).view(-1, self.dataset.img_channels)
+        depth_gt = depth_gt.permute(1, 2, 0).view(-1, self.dataset.img_channels)
+        normal_gt = normal_gt.permute(1, 2, 0).view(-1, 3)
 
         in_dict = {'idx': idx, 'coords': self.mgrid}
         # gt_dict = {'img': img}
-        gt_dict = {'img': img, 'LED_loc': LED_loc}
+        # gt_dict = {'img': img, 'LED_loc': LED_loc}
+        gt_dict = {'img': img, 'LED_loc': LED_loc, 'depth_gt':depth_gt, 'normal_gt':normal_gt}
 
         if self.compute_diff == 'gradients':
             gradients = torch.cat((torch.from_numpy(gradx).reshape(-1, 1),
