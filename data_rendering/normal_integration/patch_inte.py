@@ -66,7 +66,7 @@ def generate_Sphere(coe, radius):
     Normal_ana = np.array([dx, dy, dz]).transpose([1, 2, 0])
     Normal_ana[~mask] = 0
     Normal_ana = -Normal_ana / np.linalg.norm(Normal_ana, axis=2, keepdims=True)
-
+    Normal_ana[~mask] = 0
     plt.imshow(Normal_ana/2 + 0.5)
     plt.title('Normal map')
     plt.show()
@@ -102,7 +102,7 @@ def generate_bowl(coe, radius):
 
     return Normal_ana, point_cloud, mask
 
-def generate_SurfaceTest(radius):
+def generate_SurfaceTest(radius, offset = 0):
     x = np.linspace(-1, 1, num=radius)
     y = np.linspace(-1, 1, num=radius)
     XX, YY = np.meshgrid(x, y)
@@ -118,6 +118,7 @@ def generate_SurfaceTest(radius):
     mask_bottom = np.logical_and.reduce((XX>-0.8, XX<0.8, YY<0, YY>-0.8))
     zy[mask_bottom] = slope
     z[mask_bottom] = 0.8 * slope + slope * YY[mask_bottom]
+    z = z + offset
 
     point_cloud = np.array([XX, YY, z]).transpose([1, 2, 0])
     scatter_3d(point_cloud.reshape(-1, 3))
@@ -168,8 +169,9 @@ def generate_LEDs(radius, numx, numy, z):
 
 if __name__ == '__main__':
 
+    offset = -3
     coe = np.random.random(6) /2
-    coe[5] = 0
+    coe[5] = offset
     # coe[3:] = 0
 
     # coe = np.array([1, 2,  3, -5, -8])
@@ -178,11 +180,11 @@ if __name__ == '__main__':
     print(coe)
     radius = 64
     # N_gt, point_cloud = generate_poly_surface_unit_coord(coe, radius)
-    # N_gt, point_cloud, mask = generate_SurfaceTest(radius)
-    # N_gt, point_cloud, mask = generate_Sphere(coe, radius)
-    N_gt, point_cloud, mask = generate_bowl(coe, radius)
+    # N_gt, point_cloud, mask = generate_SurfaceTest(radius, offset)
+    N_gt, point_cloud, mask = generate_Sphere(coe, radius)
+    # N_gt, point_cloud, mask = generate_bowl(coe, radius)
 
-    LEDs = generate_LEDs(0.5, 2, 2, 3)
+    LEDs = generate_LEDs(0.5, 2, 2, 0)
     # LEDs = generate_LEDs(0.7, 1, 1, 3)
     img_set = []
     LEDs = LEDs.reshape(-1, 3)
@@ -190,7 +192,7 @@ if __name__ == '__main__':
         img = render_one_LED(N_gt, point_cloud, LED_loc, attach_shadow=True, mask = mask)
         img_set.append(img)
 
-    out_dir = './poly2d/bowl'
+    out_dir = './poly2d/ball'
     createDir(out_dir)
     np.save(os.path.join(out_dir, 'normal.npy'), N_gt)
     np.save(os.path.join(out_dir, 'point_cloud.npy'), point_cloud)

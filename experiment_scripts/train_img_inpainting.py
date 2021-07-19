@@ -23,14 +23,14 @@ p.add_argument('--experiment_name', type=str, default='test_inpaint', required=F
 # General training options
 p.add_argument('--batch_size', type=int, default=1)
 p.add_argument('--lr', type=float, default=1e-4, help='learning rate. default=1e-4')
-p.add_argument('--num_epochs', type=int, default=20000,
+p.add_argument('--num_epochs', type=int, default=30000,
                help='Number of epochs to train for.')
 p.add_argument('--k1', type=float, default=1, help='weight on prior')
 p.add_argument('--sparsity', type=float, default=1, help='percentage of pixels filled')
 p.add_argument('--prior', type=str, default=None, help='prior')
 p.add_argument('--downsample', action='store_true', default=False, help='use image downsampling kernel')
 
-p.add_argument('--epochs_til_ckpt', type=int, default=25,
+p.add_argument('--epochs_til_ckpt', type=int, default=1000,
                help='Time interval in seconds until checkpoint is saved.')
 p.add_argument('--steps_til_summary', type=int, default=500,
                help='Time interval in seconds until tensorboard summary is saved.')
@@ -45,11 +45,11 @@ p.add_argument('--model_type', type=str, default='sine',
 p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained model.')
 
 p.add_argument('--mask_path', type=str, default=None, help='Path to mask image')
-p.add_argument('--custom_image', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\img_set.npy', help='Path to single training image')
-p.add_argument('--custom_LEDs', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\LEDs.npy', help='Path to LED location')
-p.add_argument('--custom_depth', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\depth.npy', help='Path to LED location')
-p.add_argument('--custom_normal', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\normal.npy', help='Path to LED location')
-p.add_argument('--custom_mask', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\mask.npy', help='Path to LED location')
+p.add_argument('--custom_image', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\ball\img_set.npy', help='Path to single training image')
+p.add_argument('--custom_LEDs', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\ball\LEDs.npy', help='Path to LED location')
+p.add_argument('--custom_depth', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\ball\depth.npy', help='Path to LED location')
+p.add_argument('--custom_normal', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\ball\normal.npy', help='Path to LED location')
+p.add_argument('--custom_mask', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\ball\mask.npy', help='Path to LED location')
 opt = p.parse_args()
 
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -95,8 +95,11 @@ else:
 # model= torch.nn.DataParallel(model,device_ids = [1])
 # model.to(device)
 model.cuda()
+now = datetime.now() # current date and time
+date_time = now.strftime("%Y_%m_%d_%H_%M_%S")
+extra_str = 'ball'
 
-root_path = os.path.join(opt.logging_root, opt.experiment_name)
+root_path = os.path.join(opt.logging_root, opt.experiment_name, '{}_{}'.format(date_time, extra_str))
 
 if opt.custom_mask:
     mask = np.load(opt.custom_mask)
@@ -117,16 +120,16 @@ elif opt.prior == 'FH':
     loss_fn = partial(loss_functions.image_mse_FH_prior, mask.view(-1,1), opt.k1, model)
 summary_fn = partial(utils.write_image_summary, image_resolution)
 
-now = datetime.now() # current date and time
-date_time = now.strftime("%Y_%m_%d_%H_%M_%S")
 
-kwargs = {'save_folder': os.path.join(root_path, date_time),
+kwargs = {'save_folder': os.path.join(root_path, 'test'),
           'N_gt': np.load(opt.custom_normal),
           'depth_gt': np.load(opt.custom_depth),
           'vmaxND': [10, 1],
           'mask': np.load(opt.custom_mask)}
 
 
+save_state_path = None #r'F:\Project\SIREN\siren\experiment_scripts\logs\test_inpaint\2021_07_19_15_25_02_pyramid\checkpoints\model_current.pth'
 training.train(model=model, train_dataloader=dataloader, epochs=opt.num_epochs, lr=opt.lr,
                steps_til_summary=opt.steps_til_summary, epochs_til_checkpoint=opt.epochs_til_ckpt,
-               model_dir=root_path, loss_fn=loss_fn, summary_fn=summary_fn, use_lbfgs = False, kwargs = kwargs)
+               model_dir=root_path, loss_fn=loss_fn, summary_fn=summary_fn, use_lbfgs = False, kwargs = kwargs,
+               save_state_path = save_state_path)
