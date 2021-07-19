@@ -351,7 +351,9 @@ def write_image_summary(image_resolution, model, model_input, gt,
     createDir(save_folder)
 
     h, w = image_resolution
-    depth_est = model_output['model_out'].detach().cpu().numpy().reshape(h, w)
+    batch_size, _, _ = model_output['model_out'].shape
+    depth_est = model_output['model_out'].detach().cpu().numpy().reshape(batch_size, h, w)
+    depth_est = depth_est[0]
 
     img_gradient = diff_operators.gradient(model_output['model_out'], model_output['model_in'])
 
@@ -363,7 +365,9 @@ def write_image_summary(image_resolution, model, model_input, gt,
     N_norm = torch.norm(normal_set, p=2, dim=2)
     normal_dir = normal_set / N_norm.unsqueeze(2)
     normal_dir = normal_dir.detach().cpu().numpy()
-    normal_dir = normal_dir.squeeze().reshape(h, w, 3)
+    normal_dir = normal_dir.squeeze().reshape(batch_size, h, w, 3)
+    normal_dir = normal_dir[0]
+
 
 
 
@@ -379,7 +383,7 @@ def write_image_summary(image_resolution, model, model_input, gt,
 
     # save_normal_no_margin(normal_dir, mask, os.path.join(save_folder, 'iter_{}_N_est.png'.format(total_steps)))
     plt.imshow(N_2_N_show(normal_dir, mask))
-    save_plt_fig_with_title(os.path.join(save_folder, 'iter_{}_N_est.png'.format(total_steps)), 'iter_{} \t loss_{:2e}'.format(total_steps, loss_val))
+    save_plt_fig_with_title(os.path.join(save_folder, 'iter_{}_N_est.png'.format(total_steps)), 'iter_{} \n loss_{:2e}'.format(total_steps, loss_val))
     # writer.add_image(prefix + 'Normal_est', N_2_N_show(normal_dir), global_step=total_steps)
 
 
@@ -394,7 +398,7 @@ def write_image_summary(image_resolution, model, model_input, gt,
 
     shape_file_name = os.path.join(save_folder, 'iter_{}_Z_est.png'.format(total_steps))
     from hutils.draw_3D import generate_mesh
-    generate_mesh(depth_est, mask, shape_file_name, step_size = 2 / h, window_size = (1024, 768), title = 'iter_{} \t loss_{:2e}'.format(total_steps, loss_val))
+    generate_mesh(depth_est, mask, shape_file_name, step_size = 2 / h, window_size = (1024, 768), title = 'iter_{} \n \nloss_{:2e}'.format(total_steps, loss_val))
     # writer.add_image(prefix + 'Depth_est', depth_est, global_step=total_steps)
 
 
