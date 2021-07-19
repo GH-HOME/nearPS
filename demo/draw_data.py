@@ -4,7 +4,7 @@ import cv2
 import os
 import numpy as np
 
-img_dir = r'F:\Project\SIREN\siren\experiment_scripts\logs\flat_2021_07_18_19_43_33'
+img_dir = r'F:\Project\SIREN\siren\experiment_scripts\logs\sphere_2021_07_19_00_07_15'
 
 normal_path_list = glob.glob(os.path.join(img_dir, 'iter_*_N_est.png'))
 shape_path_list = glob.glob(os.path.join(img_dir, 'iter_*_Z_est.png'))

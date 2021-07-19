@@ -73,6 +73,35 @@ def generate_Sphere(coe, radius):
 
     return Normal_ana, point_cloud, mask
 
+def generate_bowl(coe, radius):
+
+    patch_size = 2 * radius + 1
+    xx, yy = np.meshgrid(np.linspace(-1, 1, patch_size), np.linspace(-1, 1, patch_size))
+    yy = np.flip(yy, axis=0)
+
+    sphere_radius = 0.99
+    zz = np.sqrt((sphere_radius) ** 2 - xx ** 2 - yy ** 2)
+    mask = ~np.isnan(zz)
+    zz[~mask] = 0
+    zz = sphere_radius - zz + coe[5]
+    dx = xx * np.power((sphere_radius) ** 2 - xx ** 2 - yy ** 2, -0.5)
+    dy = yy * np.power((sphere_radius) ** 2 - xx ** 2 - yy ** 2, -0.5)
+
+    point_cloud = np.array([xx, yy, zz]).transpose([1, 2, 0])
+
+    scatter_3d(point_cloud.reshape(-1, 3))
+    dz = np.ones_like(dx) * (-1)
+
+    Normal_ana = np.array([dx, dy, dz]).transpose([1, 2, 0])
+    Normal_ana[~mask] = 0
+    Normal_ana = -Normal_ana / np.linalg.norm(Normal_ana, axis=2, keepdims=True)
+
+    plt.imshow(Normal_ana/2 + 0.5)
+    plt.title('Normal map')
+    plt.show()
+
+    return Normal_ana, point_cloud, mask
+
 def generate_SurfaceTest(radius):
     x = np.linspace(-1, 1, num=radius)
     y = np.linspace(-1, 1, num=radius)
@@ -101,7 +130,7 @@ def generate_SurfaceTest(radius):
     mask = np.ones([h, w]).astype(np.bool)
     return Normal_ana, point_cloud, mask
 
-def render_one_LED(Normal_ana, point_cloud, LED_loc, attach_shadow = True, mask = None):
+def render_one_LED(Normal_ana, point_cloud, LED_loc, attach_shadow = True, mask = None, cast_shadow = True):
 
     h, w, _ = Normal_ana.shape
     img = np.zeros([h, w])
@@ -118,6 +147,10 @@ def render_one_LED(Normal_ana, point_cloud, LED_loc, attach_shadow = True, mask 
                 pix = light_falloff * np.dot(n, light_dir) * 1e1
                 if attach_shadow:
                     pix = np.maximum(pix, 0.0)
+                if cast_shadow:
+                    pass
+
+
 
                 img[i, j] = pix
 
@@ -145,9 +178,9 @@ if __name__ == '__main__':
     print(coe)
     radius = 64
     # N_gt, point_cloud = generate_poly_surface_unit_coord(coe, radius)
-    N_gt, point_cloud, mask = generate_SurfaceTest(radius)
-
+    # N_gt, point_cloud, mask = generate_SurfaceTest(radius)
     # N_gt, point_cloud, mask = generate_Sphere(coe, radius)
+    N_gt, point_cloud, mask = generate_bowl(coe, radius)
 
     LEDs = generate_LEDs(0.5, 2, 2, 3)
     # LEDs = generate_LEDs(0.7, 1, 1, 3)
@@ -157,7 +190,7 @@ if __name__ == '__main__':
         img = render_one_LED(N_gt, point_cloud, LED_loc, attach_shadow=True, mask = mask)
         img_set.append(img)
 
-    out_dir = './poly2d'
+    out_dir = './poly2d/bowl'
     createDir(out_dir)
     np.save(os.path.join(out_dir, 'normal.npy'), N_gt)
     np.save(os.path.join(out_dir, 'point_cloud.npy'), point_cloud)
@@ -165,4 +198,4 @@ if __name__ == '__main__':
     np.save(os.path.join(out_dir, 'LEDs.npy'), LEDs)
     np.save(os.path.join(out_dir, 'img_set.npy'), np.array(img_set))
     np.save(os.path.join(out_dir, 'mask.npy'), np.array(mask))
-    create_gif(img_set, os.path.join(out_dir, 'show.gif'), mask)
+    create_gif(img_set, os.path.join(out_dir, 'show.gif'), mask, fps = 1)
