@@ -66,7 +66,11 @@ if opt.dataset == 'camera_downsampled':
 if opt.dataset == 'custom':
     img_dataset = dataio.Shading_LEDNPY(opt.custom_image, opt.custom_LEDs, opt.custom_mask, opt.custom_normal, opt.custom_depth)
     # img_dataset = dataio.SurfaceTent(128)
-    image_resolution = (img_dataset[0]['img'].shape[1], img_dataset[0]['img'].shape[0])
+    if len(img_dataset[0]['img'].shape) == 3:
+        numImg, h, w = img_dataset[0]['img'].shape
+    else:
+        h, w = img_dataset[0]['img'].shape
+    image_resolution = (h, w)
     coord_dataset = dataio.Implicit2DWrapper(img_dataset, image_resolution, compute_diff='gradients')
 
     # image_resolution = (256, 256)

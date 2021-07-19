@@ -719,10 +719,10 @@ class Shading_LEDNPY(Dataset):
         self.mask = np.load(mask_path)
 
     def __len__(self):
-        return self.numFrames
+        return 1
 
     def __getitem__(self, idx):
-        return {'img': self.imgs[idx], 'LED_loc': self.LED_set[idx], 'depth_gt':self.depth, 'normal_gt':self.normal}
+        return {'img': self.imgs, 'LED_loc': self.LED_set, 'depth_gt':self.depth, 'normal_gt':self.normal}
 
 
 class Implicit2DWrapper(torch.utils.data.Dataset):
@@ -752,7 +752,7 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         # img = self.transform(self.dataset[idx])
         data = self.dataset[idx]
         img, LED_loc = data['img'], data['LED_loc']
-        img = self.transform(img)
+        img = torch.tensor(img)
         LED_loc = torch.tensor(LED_loc)
 
         depth_gt, normal_gt = data['depth_gt'], data['normal_gt']
@@ -760,8 +760,8 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         normal_gt = self.transform(normal_gt)
 
 
-        # img = img.permute(1, 2, 0).view(-1, self.dataset.img_channels)
-        img = img.permute(1, 2, 0).view(-1, 1)
+        img = img.permute(1, 2, 0).view(-1, self.dataset.img_channels)
+        # img = img.permute(1, 2, 0).view(-1, 1)
         depth_gt = depth_gt.permute(1, 2, 0).view(-1, 1)
         normal_gt = normal_gt.permute(1, 2, 0).view(-1, 3)
 

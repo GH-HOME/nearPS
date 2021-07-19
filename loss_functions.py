@@ -271,28 +271,30 @@ def render_NL_img_mse(mask, model_output, gt):
     normal_dir = normal_set / N_norm.unsqueeze(2)
 
     point_set = torch.stack([xx.unsqueeze(2), yy.unsqueeze(2), zz], dim=2).squeeze(3)
-    LED_loc = gt['LED_loc'].unsqueeze(1)
-    lights = LED_loc - point_set
-    L_norm = torch.norm(lights, p=2, dim=2).unsqueeze(2)
-    light_dir = lights / L_norm
-    light_falloff = torch.pow(L_norm, -2)
 
-    shading =  torch.sum(light_dir * normal_dir, dim=2, keepdims=True)
-    attach_shadow = torch.nn.ReLU()
-    img = light_falloff * attach_shadow(shading) * 1e1
-    # img = light_falloff * shading * 1e5
+    # now we test use the rendering error for all image sequence
+    batch_size, numLEDs, _ =  gt['LED_loc'].shape
+    img_loss_all = 0
+    for i in range(numLEDs):
+        LED_loc = gt['LED_loc'][:, i].unsqueeze(1)
+        lights = LED_loc - point_set
+        L_norm = torch.norm(lights, p=2, dim=2).unsqueeze(2)
+        light_dir = lights / L_norm
+        light_falloff = torch.pow(L_norm, -2)
 
+        shading =  torch.sum(light_dir * normal_dir, dim=2, keepdims=True)
+        attach_shadow = torch.nn.ReLU()
+        img = light_falloff * attach_shadow(shading) * 1e1
+        img_loss = (mask * ((img - gt['img'][:, :, i].unsqueeze(2)) ** 2)).mean()
+        img_loss_all =  img_loss_all + img_loss
 
     normal_loss = 1 - F.cosine_similarity(normal_dir, gt['normal_gt'], dim=-1)[..., None]
     depth_loss = ((zz - gt['depth_gt']) ** 2)
-    img_loss = ((img - gt['img']) ** 2)
 
-    # batch_size = model_output['model_out'].shape[0]
-    # if batch_size > 1:
     zz_mean = torch.mean(zz, dim=0, keepdim=True)
     zz_avg_loss =  ((zz - zz_mean) ** 2)
 
     if mask is None:
-        return {'img_loss':  (img_loss+depth_loss + normal_loss).mean()}
+        return {'img_loss':  (img_loss_all + depth_loss + normal_loss).mean()}
     else:
-        return {'img_loss': (mask * (img_loss)).mean(), 'zz_avg_loss': (mask * (zz_avg_loss)).mean()}
+        return {'img_loss': img_loss_all, 'zz_avg_loss': (mask * (zz_avg_loss)).mean()}
