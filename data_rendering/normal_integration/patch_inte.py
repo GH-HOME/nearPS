@@ -189,9 +189,10 @@ if __name__ == '__main__':
     img_set = []
     LEDs = LEDs.reshape(-1, 3)
 
-    albedo = cv2.imread(r'F:\dataset\albedo\v10_square.png', 0)
-    albedo = albedo / albedo.max()
-    albedo = cv2.resize(albedo, (2*radius+1, 2 * radius + 1))
+    # albedo = cv2.imread(r'F:\dataset\albedo\v10_square.png', 0)
+    # albedo = albedo / albedo.max()
+    # albedo = cv2.resize(albedo, (2*radius+1, 2 * radius + 1))
+    albedo = np.ones((2*radius+1, 2 * radius + 1))
 
 
     for LED_loc in LEDs:

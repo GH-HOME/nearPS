@@ -707,7 +707,7 @@ class AudioFile(Dataset):
 
 
 class Shading_LEDNPY(Dataset):
-    def __init__(self, img_paths, LED_path, mask_path, normal_path, depth_path):
+    def __init__(self, img_paths, LED_path, mask_path, normal_path, depth_path, albedo_path):
         super().__init__()
 
         self.LED_set = np.load(LED_path)
@@ -717,12 +717,13 @@ class Shading_LEDNPY(Dataset):
         self.depth = np.load(depth_path)
         self.normal = np.load(normal_path)
         self.mask = np.load(mask_path)
+        self.albedo = np.load(albedo_path)
 
     def __len__(self):
         return 1
 
     def __getitem__(self, idx):
-        return {'img': self.imgs, 'LED_loc': self.LED_set, 'depth_gt':self.depth, 'normal_gt':self.normal}
+        return {'img': self.imgs, 'LED_loc': self.LED_set, 'depth_gt':self.depth, 'normal_gt':self.normal, 'albedo_gt':self.albedo}
 
 
 class Implicit2DWrapper(torch.utils.data.Dataset):
@@ -755,20 +756,22 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         img = torch.tensor(img)
         LED_loc = torch.tensor(LED_loc)
 
-        depth_gt, normal_gt = data['depth_gt'], data['normal_gt']
+        depth_gt, normal_gt, albedo_gt = data['depth_gt'], data['normal_gt'], data['albedo_gt']
         depth_gt = self.transform(depth_gt)
         normal_gt = self.transform(normal_gt)
+        albedo_gt = self.transform(albedo_gt)
 
 
         img = img.permute(1, 2, 0).view(-1, self.dataset.img_channels)
         # img = img.permute(1, 2, 0).view(-1, 1)
         depth_gt = depth_gt.permute(1, 2, 0).view(-1, 1)
         normal_gt = normal_gt.permute(1, 2, 0).view(-1, 3)
+        albedo_gt = albedo_gt.permute(1, 2, 0).view(-1, 1)
 
         in_dict = {'idx': idx, 'coords': self.mgrid}
         # gt_dict = {'img': img}
         # gt_dict = {'img': img, 'LED_loc': LED_loc}
-        gt_dict = {'img': img, 'LED_loc': LED_loc, 'depth_gt':depth_gt, 'normal_gt':normal_gt}
+        gt_dict = {'img': img, 'LED_loc': LED_loc, 'depth_gt':depth_gt, 'normal_gt':normal_gt, 'albedo_gt': albedo_gt}
 
 
         return in_dict, gt_dict

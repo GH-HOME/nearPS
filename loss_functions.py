@@ -302,3 +302,123 @@ def render_NL_img_mse(mask, model_output, gt):
                 # 'normal_loss':(mask * (depth_loss)).mean(),
                 # 'zz_avg_loss': (mask * (zz_avg_loss)).mean()
                 }
+
+
+def render_NL_img_mse_sv_albedo(mask, model_output, gt):
+    gradients = diff_operators.gradient(model_output['model_out'], model_output['model_in'])
+    Laplacian = diff_operators.laplace(model_output['model_out'], model_output['model_in'])
+    dx, dy = gradients[:,:,0], gradients[:,:,1]
+
+    xx, yy =model_output['model_in'][:,:,0], model_output['model_in'][:,:,1]
+    zz = model_output['model_out'][: , :,0].unsqueeze(2)
+    albedo = model_output['model_out'][:, :, 1].unsqueeze(2)
+    nx = - dx.unsqueeze(2)
+    ny = - dy.unsqueeze(2)
+    nz = torch.ones_like(nx)
+    normal_set = torch.stack([nx, ny, nz], dim=2).squeeze(3)
+    N_norm = torch.norm(normal_set, p=2, dim=2)
+    normal_dir = normal_set / N_norm.unsqueeze(2)
+
+    point_set = torch.stack([xx.unsqueeze(2), yy.unsqueeze(2), zz], dim=2).squeeze(3)
+
+    # now we test use the rendering error for all image sequence
+    batch_size, numLEDs, _ =  gt['LED_loc'].shape
+    img_loss_all = 0
+    for i in range(numLEDs):
+        LED_loc = gt['LED_loc'][:, i].unsqueeze(1)
+        lights = LED_loc - point_set
+        L_norm = torch.norm(lights, p=2, dim=2).unsqueeze(2)
+        light_dir = lights / L_norm
+        light_falloff = torch.pow(L_norm, -2)
+
+        shading =  torch.sum(light_dir * normal_dir, dim=2, keepdims=True)
+        attach_shadow = torch.nn.ReLU()
+        img = albedo * light_falloff * attach_shadow(shading) * 1e1
+        img_loss = (mask * ((img - gt['img'][:, :, i].unsqueeze(2)) ** 2)).mean()
+        img_loss_all =  img_loss_all + img_loss
+
+    normal_loss = 1 - F.cosine_similarity(normal_dir, gt['normal_gt'], dim=-1)[..., None]
+    depth_loss = ((zz - gt['depth_gt']) ** 2)
+
+    # zz_mean = torch.mean(zz, dim=0, keepdim=True)
+    # zz_avg_loss =  ((zz - zz_mean) ** 2)
+
+    if mask is None:
+        return {'img_loss':  (img_loss_all + depth_loss + normal_loss).mean()}
+    else:
+        return {
+                'img_loss': img_loss_all,
+                'laplace_loss': (mask * (Laplacian) ** 2).mean()
+                # 'depth_loss': (mask * (depth_loss)).mean(),
+                # 'normal_loss':(mask * (depth_loss)).mean(),
+                # 'zz_avg_loss': (mask * (zz_avg_loss)).mean()
+                }
+
+
+def render_NL_img_sv_albedo_PDE(mask, model_output, gt):
+    gradients = diff_operators.gradient(model_output['model_out'], model_output['model_in'])
+
+    dx, dy = gradients[:,:,0], gradients[:,:,1]
+
+    xx, yy =model_output['model_in'][:,:,0], model_output['model_in'][:,:,1]
+    zz = model_output['model_out']
+    # zz = gt['depth_gt']  # for debug
+
+    nx = - dx.unsqueeze(2)
+    ny = - dy.unsqueeze(2)
+    nz = torch.ones_like(nx)
+    normal_set = torch.stack([nx, ny, nz], dim=2).squeeze(3)
+    N_norm = torch.norm(normal_set, p=2, dim=2)
+    normal_dir = normal_set / N_norm.unsqueeze(2)
+
+    # normal_dir = gt['normal_gt']  # for debug
+
+    point_set = torch.stack([xx.unsqueeze(2), yy.unsqueeze(2), zz], dim=2).squeeze(3)
+
+    # now we test use the rendering error for all image sequence
+    batch_size, numLEDs, _ =  gt['LED_loc'].shape
+    img_loss_all = 0
+    S_p = None
+    S_0 = None
+    for i in range(numLEDs):
+        LED_loc = gt['LED_loc'][:, i].unsqueeze(1)
+        lights = LED_loc - point_set
+        L_norm = torch.norm(lights, p=2, dim=2).unsqueeze(2)
+        light_dir = lights / L_norm
+        light_falloff = torch.pow(L_norm, -2)
+
+        shading =  torch.sum(light_dir * normal_dir, dim=2, keepdims=True)
+        attach_shadow = torch.nn.ReLU()
+        img = light_falloff * attach_shadow(shading) * 1e1
+
+        if i ==0:
+            S_p = torch.clone(img)
+            S_0 = torch.clone(img)
+        else:
+            img_loss = (mask * ((img * gt['img'][:, :, i-1].unsqueeze(2)  - S_p * gt['img'][:, :, i].unsqueeze(2)) ** 2)).mean()
+            img_loss_all =  img_loss_all + img_loss
+            S_p = torch.clone(img)
+
+    # add ratio of image last and image 0
+    img_loss = (mask * (
+                (S_0 * gt['img'][:, :, -1].unsqueeze(2) - S_p * gt['img'][:, :, 0].unsqueeze(2)) ** 2)).mean()
+
+    img_loss_all = img_loss_all + img_loss
+
+    normal_loss = 1 - F.cosine_similarity(normal_dir, gt['normal_gt'], dim=-1)[..., None]
+    depth_loss = ((zz - gt['depth_gt']) ** 2)
+
+
+
+    # zz_mean = torch.mean(zz, dim=0, keepdim=True)
+    # zz_avg_loss =  ((zz - zz_mean) ** 2)
+
+    if mask is None:
+        return {'img_loss':  (img_loss_all + depth_loss + normal_loss).mean()}
+    else:
+        return {
+                'img_loss': img_loss_all,
+                # 'depth_loss': (mask * (depth_loss)).mean(),
+                # 'normal_loss':(mask * (depth_loss)).mean(),
+                # 'zz_avg_loss': (mask * (zz_avg_loss)).mean()
+                }

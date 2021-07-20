@@ -45,11 +45,12 @@ p.add_argument('--model_type', type=str, default='sine',
 p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained model.')
 
 p.add_argument('--mask_path', type=str, default=None, help='Path to mask image')
-p.add_argument('--custom_image', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\pyramid\img_set.npy', help='Path to single training image')
-p.add_argument('--custom_LEDs', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\pyramid\LEDs.npy', help='Path to LED location')
-p.add_argument('--custom_depth', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\pyramid\depth.npy', help='Path to LED location')
-p.add_argument('--custom_normal', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\pyramid\normal.npy', help='Path to LED location')
-p.add_argument('--custom_mask', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\pyramid\mask.npy', help='Path to LED location')
+p.add_argument('--custom_image', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\ball_albedo\img_set.npy', help='Path to single training image')
+p.add_argument('--custom_LEDs', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\ball_albedo\LEDs.npy', help='Path to LED location')
+p.add_argument('--custom_depth', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\ball_albedo\depth.npy', help='Path to LED location')
+p.add_argument('--custom_normal', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\ball_albedo\normal.npy', help='Path to LED location')
+p.add_argument('--custom_mask', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\ball_albedo\mask.npy', help='Path to LED location')
+p.add_argument('--custom_albedo', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\ball_albedo\albedo.npy', help='Path to LED location')
 opt = p.parse_args()
 
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -64,7 +65,7 @@ if opt.dataset == 'camera_downsampled':
     coord_dataset = dataio.Implicit2DWrapper(img_dataset, sidelength=256, compute_diff='all')
     image_resolution = (256, 256)
 if opt.dataset == 'custom':
-    img_dataset = dataio.Shading_LEDNPY(opt.custom_image, opt.custom_LEDs, opt.custom_mask, opt.custom_normal, opt.custom_depth)
+    img_dataset = dataio.Shading_LEDNPY(opt.custom_image, opt.custom_LEDs, opt.custom_mask, opt.custom_normal, opt.custom_depth, opt.custom_albedo)
     # img_dataset = dataio.SurfaceTent(128)
     if len(img_dataset[0]['img'].shape) == 3:
         numImg, h, w = img_dataset[0]['img'].shape
@@ -97,7 +98,7 @@ else:
 model.cuda()
 now = datetime.now() # current date and time
 date_time = now.strftime("%Y_%m_%d_%H_%M_%S")
-extra_str = 'pyramid'
+extra_str = 'ball_albedo'
 
 root_path = os.path.join(opt.logging_root, opt.experiment_name, '{}_{}'.format(date_time, extra_str))
 
@@ -124,6 +125,7 @@ summary_fn = partial(utils.write_image_summary, image_resolution)
 kwargs = {'save_folder': os.path.join(root_path, 'test'),
           'N_gt': np.load(opt.custom_normal),
           'depth_gt': np.load(opt.custom_depth),
+          'albedo_gt':np.load(opt.custom_albedo),
           'vmaxND': [10, 1],
           'mask': np.load(opt.custom_mask)}
 
