@@ -169,7 +169,7 @@ def generate_LEDs(radius, numx, numy, z):
 
 if __name__ == '__main__':
 
-    offset = -3
+    offset = 0
     coe = np.random.random(6) /2
     coe[5] = offset
     # coe[3:] = 0
@@ -184,15 +184,23 @@ if __name__ == '__main__':
     N_gt, point_cloud, mask = generate_Sphere(coe, radius)
     # N_gt, point_cloud, mask = generate_bowl(coe, radius)
 
-    LEDs = generate_LEDs(0.5, 2, 2, 0)
+    LEDs = generate_LEDs(0.5, 2, 2, 3)
     # LEDs = generate_LEDs(0.7, 1, 1, 3)
     img_set = []
     LEDs = LEDs.reshape(-1, 3)
+
+    albedo = cv2.imread(r'F:\dataset\albedo\v10_square.png', 0)
+    albedo = albedo / albedo.max()
+    albedo = cv2.resize(albedo, (2*radius+1, 2 * radius + 1))
+
+
     for LED_loc in LEDs:
         img = render_one_LED(N_gt, point_cloud, LED_loc, attach_shadow=True, mask = mask)
+        img = img * albedo
         img_set.append(img)
 
-    out_dir = './poly2d/ball'
+
+    out_dir = './poly2d/ball_albedo'
     createDir(out_dir)
     np.save(os.path.join(out_dir, 'normal.npy'), N_gt)
     np.save(os.path.join(out_dir, 'point_cloud.npy'), point_cloud)
@@ -200,4 +208,5 @@ if __name__ == '__main__':
     np.save(os.path.join(out_dir, 'LEDs.npy'), LEDs)
     np.save(os.path.join(out_dir, 'img_set.npy'), np.array(img_set))
     np.save(os.path.join(out_dir, 'mask.npy'), np.array(mask))
+    np.save(os.path.join(out_dir, 'albedo.npy'), np.array(albedo))
     create_gif(img_set, os.path.join(out_dir, 'show.gif'), mask, fps = 1)

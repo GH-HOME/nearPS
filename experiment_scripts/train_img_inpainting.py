@@ -45,11 +45,11 @@ p.add_argument('--model_type', type=str, default='sine',
 p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained model.')
 
 p.add_argument('--mask_path', type=str, default=None, help='Path to mask image')
-p.add_argument('--custom_image', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\ball\img_set.npy', help='Path to single training image')
-p.add_argument('--custom_LEDs', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\ball\LEDs.npy', help='Path to LED location')
-p.add_argument('--custom_depth', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\ball\depth.npy', help='Path to LED location')
-p.add_argument('--custom_normal', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\ball\normal.npy', help='Path to LED location')
-p.add_argument('--custom_mask', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\ball\mask.npy', help='Path to LED location')
+p.add_argument('--custom_image', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\pyramid\img_set.npy', help='Path to single training image')
+p.add_argument('--custom_LEDs', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\pyramid\LEDs.npy', help='Path to LED location')
+p.add_argument('--custom_depth', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\pyramid\depth.npy', help='Path to LED location')
+p.add_argument('--custom_normal', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\pyramid\normal.npy', help='Path to LED location')
+p.add_argument('--custom_mask', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\pyramid\mask.npy', help='Path to LED location')
 opt = p.parse_args()
 
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -97,7 +97,7 @@ else:
 model.cuda()
 now = datetime.now() # current date and time
 date_time = now.strftime("%Y_%m_%d_%H_%M_%S")
-extra_str = 'ball'
+extra_str = 'pyramid'
 
 root_path = os.path.join(opt.logging_root, opt.experiment_name, '{}_{}'.format(date_time, extra_str))
 
