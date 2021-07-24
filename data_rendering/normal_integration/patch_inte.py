@@ -145,7 +145,7 @@ def render_one_LED(Normal_ana, point_cloud, LED_loc, attach_shadow = True, mask 
                 n = Normal_ana[i, j]
                 light_falloff = 1.0 / np.square(np.linalg.norm(x_3d - LED_loc))
                 light_dir = (LED_loc - x_3d) / np.linalg.norm(x_3d - LED_loc)
-                pix = light_falloff * np.dot(n, light_dir) * 1e1
+                pix = light_falloff * np.dot(n, light_dir)
                 if attach_shadow:
                     pix = np.maximum(pix, 0.0)
                 if cast_shadow:
@@ -172,11 +172,7 @@ if __name__ == '__main__':
     offset = 0
     coe = np.random.random(6) /2
     coe[5] = offset
-    # coe[3:] = 0
 
-    # coe = np.array([1, 2,  3, -5, -8])
-    # [0.00234301 0.00297627 0.0057204  0.00752655 0.00024565]
-    # coe = np.array([0, 0, 1, 0, 0])
     print(coe)
     radius = 64
     # N_gt, point_cloud = generate_poly_surface_unit_coord(coe, radius)

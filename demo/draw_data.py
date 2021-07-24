@@ -4,7 +4,7 @@ import cv2
 import os
 import numpy as np
 
-img_dir = r'F:\Project\SIREN\siren\experiment_scripts\logs\test_inpaint\2021_07_19_19_58_49_ball\test'
+img_dir = r'F:\Project\SIREN\siren\experiment_scripts\logs\test_inpaint\2021_07_20_11_13_54_ball_albedo_two_channel\test'
 draw_data = False
 interval = 1
 fps = 5

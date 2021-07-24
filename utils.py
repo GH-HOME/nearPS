@@ -368,9 +368,6 @@ def write_image_summary(image_resolution, model, model_input, gt,
     normal_dir = normal_dir.squeeze().reshape(batch_size, h, w, 3)
     normal_dir = normal_dir[0]
 
-
-
-
     if N_gt is not None:
         error_map, mae, _ = evalsurfaceNormal(normal_dir, N_gt, mask = mask)
         img_path = os.path.join(save_folder, 'iter_{:0>5d}_ang_err_{:.2f}.png'.format(total_steps, mae))

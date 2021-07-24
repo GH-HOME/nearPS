@@ -284,7 +284,7 @@ def render_NL_img_mse(mask, model_output, gt):
 
         shading =  torch.sum(light_dir * normal_dir, dim=2, keepdims=True)
         attach_shadow = torch.nn.ReLU()
-        img = light_falloff * attach_shadow(shading) * 1e1
+        img = light_falloff * attach_shadow(shading)
         img_loss = (mask * ((img - gt['img'][:, :, i].unsqueeze(2)) ** 2)).mean()
         img_loss_all =  img_loss_all + img_loss
 
@@ -333,7 +333,7 @@ def render_NL_img_mse_sv_albedo(mask, model_output, gt):
 
         shading =  torch.sum(light_dir * normal_dir, dim=2, keepdims=True)
         attach_shadow = torch.nn.ReLU()
-        img = albedo * light_falloff * attach_shadow(shading) * 1e1
+        img = albedo * light_falloff * attach_shadow(shading)
         img_loss = (mask * ((img - gt['img'][:, :, i].unsqueeze(2)) ** 2)).mean()
         img_loss_all =  img_loss_all + img_loss
 
@@ -389,7 +389,7 @@ def render_NL_img_sv_albedo_PDE(mask, model_output, gt):
 
         shading =  torch.sum(light_dir * normal_dir, dim=2, keepdims=True)
         attach_shadow = torch.nn.ReLU()
-        img = light_falloff * attach_shadow(shading) * 1e1
+        img = light_falloff * attach_shadow(shading)
 
         if i ==0:
             S_p = torch.clone(img)
@@ -407,8 +407,6 @@ def render_NL_img_sv_albedo_PDE(mask, model_output, gt):
 
     normal_loss = 1 - F.cosine_similarity(normal_dir, gt['normal_gt'], dim=-1)[..., None]
     depth_loss = ((zz - gt['depth_gt']) ** 2)
-
-
 
     # zz_mean = torch.mean(zz, dim=0, keepdim=True)
     # zz_avg_loss =  ((zz - zz_mean) ** 2)
