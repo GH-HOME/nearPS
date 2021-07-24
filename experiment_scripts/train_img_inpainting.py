@@ -45,12 +45,12 @@ p.add_argument('--model_type', type=str, default='sine',
 p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained model.')
 
 p.add_argument('--mask_path', type=str, default=None, help='Path to mask image')
-p.add_argument('--custom_image', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\ball_albedo\img_set.npy', help='Path to single training image')
-p.add_argument('--custom_LEDs', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\ball_albedo\LEDs.npy', help='Path to LED location')
-p.add_argument('--custom_depth', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\ball_albedo\depth.npy', help='Path to LED location')
-p.add_argument('--custom_normal', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\ball_albedo\normal.npy', help='Path to LED location')
-p.add_argument('--custom_mask', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\ball_albedo\mask.npy', help='Path to LED location')
-p.add_argument('--custom_albedo', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\ball_albedo\albedo.npy', help='Path to LED location')
+p.add_argument('--custom_image', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\pyramid_albedo\img_set.npy', help='Path to single training image')
+p.add_argument('--custom_LEDs', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\pyramid_albedo\LEDs.npy', help='Path to LED location')
+p.add_argument('--custom_depth', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\pyramid_albedo\depth.npy', help='Path to LED location')
+p.add_argument('--custom_normal', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\pyramid_albedo\normal.npy', help='Path to LED location')
+p.add_argument('--custom_mask', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\pyramid_albedo\mask.npy', help='Path to LED location')
+p.add_argument('--custom_albedo', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\pyramid_albedo\albedo.npy', help='Path to LED location')
 opt = p.parse_args()
 
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -98,7 +98,7 @@ else:
 model.cuda()
 now = datetime.now() # current date and time
 date_time = now.strftime("%Y_%m_%d_%H_%M_%S")
-extra_str = 'ball_albedo'
+extra_str = 'pyramid_albedo'
 
 root_path = os.path.join(opt.logging_root, opt.experiment_name, '{}_{}'.format(date_time, extra_str))
 
@@ -114,7 +114,7 @@ else:
 
 # Define the loss
 if opt.prior is None:
-    loss_fn = partial(loss_functions.render_NL_img_mse, mask.view(-1,1))
+    loss_fn = partial(loss_functions.render_NL_img_mse_sv_albedo_lstsq, mask.view(-1,1))
 elif opt.prior == 'TV':
     loss_fn = partial(loss_functions.image_mse_TV_prior, mask.view(-1,1), opt.k1, model)
 elif opt.prior == 'FH':
