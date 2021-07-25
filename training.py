@@ -88,7 +88,7 @@ def train(model, train_dataloader, epochs, lr, steps_til_summary, epochs_til_che
                     optim.step(closure)
 
                 model_output = model(model_input)
-                losses = loss_fn(model_output, gt)
+                losses = loss_fn(model_output, gt, total_steps)
 
                 train_loss = 0.
                 for loss_name, loss in losses.items():

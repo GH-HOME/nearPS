@@ -422,7 +422,7 @@ def render_NL_img_sv_albedo_PDE(mask, model_output, gt):
                 }
 
 
-def render_NL_img_mse_sv_albedo_lstsq(mask, model_output, gt):
+def render_NL_img_mse_sv_albedo_lstsq(mask, model_output, gt, total_steps):
     gradients = diff_operators.gradient(model_output['model_out'], model_output['model_in'])
     dx, dy = gradients[:, :, 0], gradients[:, :, 1]
 
@@ -442,6 +442,7 @@ def render_NL_img_mse_sv_albedo_lstsq(mask, model_output, gt):
     batch_size, numPixel, numChannel = zz.shape
     shading_set = torch.zeros([batch_size, numPixel, numChannel, numLEDs], dtype=torch.float64)
     shading_set = shading_set.cuda()
+    attach_shadow = torch.nn.ReLU()
     for i in range(numLEDs):
         LED_loc = gt['LED_loc'][:, i].unsqueeze(1)
         lights = LED_loc - point_set
@@ -450,17 +451,20 @@ def render_NL_img_mse_sv_albedo_lstsq(mask, model_output, gt):
         light_falloff = torch.pow(L_norm, -2)
 
         shading = torch.sum(light_dir * normal_dir, dim=2, keepdims=True)
-        attach_shadow = torch.nn.ReLU()
-        img = light_falloff * attach_shadow(shading)
+
+        img = light_falloff * shading
         shading_set[:, :, :, i] = img
         # shading_set[:, :, :, i] = torch.where(torch.isnan(img), shading_set[:, :, :, i], img)
 
 
     # Calc the albedo from the least square
-    albedo_sum = (shading_set * shading_set).sum(dim = 3)
-    albedo_sum = torch.where(albedo_sum < 1e-8, torch.ones_like(albedo_sum) * 1e-8, albedo_sum)
-    albedo = (gt['img'].unsqueeze(2) * shading_set).sum(dim = 3) / albedo_sum
-    residue = torch.abs(gt['img'].unsqueeze(2) - shading_set * albedo.unsqueeze(3))
+    if total_steps > 2e3:
+        shading_set = attach_shadow(shading_set)
+
+    shading_sum = (shading_set * shading_set).sum(dim = 3)
+    shading_sum = torch.where(shading_sum < 1e-8, torch.ones_like(shading_sum) * 1e-8, shading_sum)
+    albedo = (gt['img'].unsqueeze(2) * attach_shadow(shading_set)).sum(dim = 3) / shading_sum
+    residue = torch.abs(gt['img'].unsqueeze(2) - attach_shadow(shading_set) * albedo.unsqueeze(3))
 
     img_loss_all = (mask * residue.mean(dim = 3)).mean()
 
