@@ -151,8 +151,6 @@ def render_one_LED(Normal_ana, point_cloud, LED_loc, attach_shadow = True, mask 
                 if cast_shadow:
                     pass
 
-
-
                 img[i, j] = pix
 
     return img
@@ -189,17 +187,20 @@ if __name__ == '__main__':
     albedo = cv2.imread(r'F:\dataset\albedo\v10_square.png', 0)
     albedo = albedo / albedo.max()
     albedo = cv2.resize(albedo, (129, 129))
-    # albedo = np.ones([64, 64])
+    albedo = np.ones([129, 129])
     # albedo = np.ones((2*radius+1, 2 * radius + 1))
-
-
-    for LED_loc in LEDs:
-        img = render_one_LED(N_gt, point_cloud, LED_loc, attach_shadow=True, mask = mask)
-        img = img * albedo
+    LED_ins_set = np.random.random(len(LEDs)) + 1
+    LED_ins_set = (np.arange(len(LEDs)) + 1) / 50
+    print(LED_ins_set)
+    shading_set = []
+    for i, LED_loc in enumerate(LEDs):
+        shading = render_one_LED(N_gt, point_cloud, LED_loc, attach_shadow=True, mask = mask)
+        img = shading * albedo * LED_ins_set[i]
         img_set.append(img)
+        shading_set.append(shading)
 
 
-    out_dir = './poly2d/pyramid_albedo_bad_init'
+    out_dir = './poly2d/pyramid_bad_init_random_led_ins'
     createDir(out_dir)
     np.save(os.path.join(out_dir, 'normal.npy'), N_gt)
     np.save(os.path.join(out_dir, 'point_cloud.npy'), point_cloud)
@@ -208,4 +209,5 @@ if __name__ == '__main__':
     np.save(os.path.join(out_dir, 'img_set.npy'), np.array(img_set))
     np.save(os.path.join(out_dir, 'mask.npy'), np.array(mask))
     np.save(os.path.join(out_dir, 'albedo.npy'), np.array(albedo))
+    np.save(os.path.join(out_dir, 'light_ins.npy'), np.array(LED_ins_set))
     create_gif(img_set, os.path.join(out_dir, 'show.gif'), mask, fps = 1)
