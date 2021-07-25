@@ -40,7 +40,7 @@ class FCBlock(MetaModule):
     '''
 
     def __init__(self, in_features, out_features, num_hidden_layers, hidden_features,
-                 outermost_linear=False, nonlinearity='relu', weight_init=None):
+                 outermost_linear=False, nonlinearity='relu', weight_init=None, last_layer_offset=None):
         super().__init__()
 
         self.first_layer_init = None
@@ -80,11 +80,18 @@ class FCBlock(MetaModule):
             ))
 
         self.net = MetaSequential(*self.net)
+
         if self.weight_init is not None:
             self.net.apply(self.weight_init)
 
         if first_layer_init is not None: # Apply special initialization to first layer, if applicable.
             self.net[0].apply(first_layer_init)
+
+
+        if last_layer_offset is not None: # Apply special initialization to last layer, if applicable.
+            self.net[-1][0].bias.data.fill_(last_layer_offset)
+
+        print(self.net)
 
     def forward(self, coords, params=None, **kwargs):
         if params is None:
@@ -136,8 +143,10 @@ class SingleBVPNet(MetaModule):
 
         self.image_downsampling = ImageDownsampling(sidelength=kwargs.get('sidelength', None),
                                                     downsample=kwargs.get('downsample', False))
+
+        offset = kwargs.get('last_layer_offset',  0.0)
         self.net = FCBlock(in_features=in_features, out_features=out_features, num_hidden_layers=num_hidden_layers,
-                           hidden_features=hidden_features, outermost_linear=True, nonlinearity=type)
+                           hidden_features=hidden_features, outermost_linear=True, nonlinearity=type, last_layer_offset = offset)
         print(self)
 
     def forward(self, model_input, params=None):
@@ -699,6 +708,15 @@ def sine_init(m):
             num_input = m.weight.size(-1)
             # See supplement Sec. 1.5 for discussion of factor 30
             m.weight.uniform_(-np.sqrt(6 / num_input) / 30, np.sqrt(6 / num_input) / 30)
+
+
+def last_layer_linear_init(m):
+    offset = torch.tensor(-3.0)
+    with torch.no_grad():
+        if hasattr(m, 'bias'):
+            # m.bias = m.bias + offset
+            m.bias.add(offset)
+
 
 
 def first_layer_sine_init(m):

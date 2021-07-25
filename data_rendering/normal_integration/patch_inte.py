@@ -174,11 +174,11 @@ if __name__ == '__main__':
     coe[5] = offset
 
     print(coe)
-    radius = 64
+    radius = 129
 
     # N_gt, point_cloud = generate_poly_surface_unit_coord(coe, radius)
-    # N_gt, point_cloud, mask = generate_SurfaceTest(radius, offset)
-    N_gt, point_cloud, mask = generate_Sphere(coe, radius)
+    N_gt, point_cloud, mask = generate_SurfaceTest(radius, offset)
+    # N_gt, point_cloud, mask = generate_Sphere(coe, radius)
     # N_gt, point_cloud, mask = generate_bowl(coe, radius)
 
     LEDs = generate_LEDs(0.5, 2, 2, 0)
@@ -199,7 +199,7 @@ if __name__ == '__main__':
         img_set.append(img)
 
 
-    out_dir = './poly2d/ball_albedo_bad_init'
+    out_dir = './poly2d/pyramid_albedo_bad_init'
     createDir(out_dir)
     np.save(os.path.join(out_dir, 'normal.npy'), N_gt)
     np.save(os.path.join(out_dir, 'point_cloud.npy'), point_cloud)
