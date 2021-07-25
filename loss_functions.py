@@ -452,7 +452,7 @@ def render_NL_img_mse_sv_albedo_lstsq(mask, model_output, gt):
         shading = torch.sum(light_dir * normal_dir, dim=2, keepdims=True)
         attach_shadow = torch.nn.ReLU()
         img = light_falloff * attach_shadow(shading)
-        shading_set[:, :, :, i] = img * 1e2
+        shading_set[:, :, :, i] = img
 
 
     # Calc the albedo from the least square

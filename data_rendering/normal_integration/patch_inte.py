@@ -169,7 +169,7 @@ def generate_LEDs(radius, numx, numy, z):
 
 if __name__ == '__main__':
 
-    offset = 0
+    offset = -3
     coe = np.random.random(6) /2
     coe[5] = offset
 
@@ -181,7 +181,7 @@ if __name__ == '__main__':
     # N_gt, point_cloud, mask = generate_Sphere(coe, radius)
     # N_gt, point_cloud, mask = generate_bowl(coe, radius)
 
-    LEDs = generate_LEDs(0.5, 2, 2, 3)
+    LEDs = generate_LEDs(0.5, 2, 2, 1)
     # LEDs = generate_LEDs(0.7, 1, 1, 3)
     img_set = []
     LEDs = LEDs.reshape(-1, 3)
@@ -199,7 +199,7 @@ if __name__ == '__main__':
         img_set.append(img)
 
 
-    out_dir = './poly2d/pyramid_albedo'
+    out_dir = './poly2d/pyramid_albedo_bad_init'
     createDir(out_dir)
     np.save(os.path.join(out_dir, 'normal.npy'), N_gt)
     np.save(os.path.join(out_dir, 'point_cloud.npy'), point_cloud)
