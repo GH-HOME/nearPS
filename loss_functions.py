@@ -422,7 +422,7 @@ def render_NL_img_sv_albedo_PDE(mask, model_output, gt):
                 }
 
 
-def render_NL_img_mse_sv_albedo_lstsq(mask, model_output, gt, total_steps):
+def render_NL_img_mse_sv_albedo_lstsq(mask, model_output, gt, total_steps, device):
     gradients = diff_operators.gradient(model_output['model_out'], model_output['model_in'])
     dx, dy = gradients[:, :, 0], gradients[:, :, 1]
 
@@ -441,7 +441,7 @@ def render_NL_img_mse_sv_albedo_lstsq(mask, model_output, gt, total_steps):
     batch_size, numLEDs, _ = gt['LED_loc'].shape
     batch_size, numPixel, numChannel = zz.shape
     shading_set = torch.zeros([batch_size, numPixel, numChannel, numLEDs], dtype=torch.float64)
-    shading_set = shading_set.cuda()
+    shading_set = shading_set.to(device)
     attach_shadow = torch.nn.ReLU()
     for i in range(numLEDs):
         LED_loc = gt['LED_loc'][:, i].unsqueeze(1)

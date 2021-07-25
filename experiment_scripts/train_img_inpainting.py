@@ -23,7 +23,7 @@ p.add_argument('--experiment_name', type=str, default='test_inpaint', required=F
 # General training options
 p.add_argument('--batch_size', type=int, default=1)
 p.add_argument('--lr', type=float, default=1e-4, help='learning rate. default=1e-4')
-p.add_argument('--num_epochs', type=int, default=30000,
+p.add_argument('--num_epochs', type=int, default=20000,
                help='Number of epochs to train for.')
 p.add_argument('--k1', type=float, default=1, help='weight on prior')
 p.add_argument('--sparsity', type=float, default=1, help='percentage of pixels filled')
@@ -52,9 +52,11 @@ p.add_argument('--custom_normal', type=str, default=r'F:\Project\SIREN\siren\dat
 p.add_argument('--custom_mask', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\ball_albedo_bad_init\mask.npy', help='Path to LED location')
 p.add_argument('--custom_albedo', type=str, default=r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\ball_albedo_bad_init\albedo.npy', help='Path to LED location')
 p.add_argument('--custom_depth_offset', type=float, default=-0.0, help='initial depth from the LED position')
+p.add_argument('--gpu_id', type=int, default=1, help='GPU ID')
 opt = p.parse_args()
 
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:{gpu}".format(gpu=opt.gpu_id))
 
 
 if opt.dataset == 'camera':
@@ -96,27 +98,27 @@ else:
     raise NotImplementedError
 
 # model= torch.nn.DataParallel(model,device_ids = [1])
-# model.to(device)
-model.cuda()
+model.to(device)
+# model.cuda()
 now = datetime.now() # current date and time
 date_time = now.strftime("%Y_%m_%d_%H_%M_%S")
-extra_str = '2021_07_25_14_40_33_ball_albedo_bad_init_handleNAN'
+extra_str = 'ball_albedo_bad_init_handleNAN'
 
 root_path = os.path.join(opt.logging_root, opt.experiment_name, '{}_{}'.format(date_time, extra_str))
 
 if opt.custom_mask:
     mask = np.load(opt.custom_mask)
     mask = ToTensor()(mask)
-    mask = mask.float().cuda()
+    mask = mask.float().to(device)
     percentage = torch.sum(mask).cpu().numpy() / np.prod(mask.shape)
     print("mask sparsity %f" % (percentage))
 else:
     mask = torch.rand(image_resolution) < opt.sparsity
-    mask = mask.float().cuda()
+    mask = mask.float().to(device)
 
 # Define the loss
 if opt.prior is None:
-    loss_fn = partial(loss_functions.render_NL_img_mse_sv_albedo_lstsq, mask.view(-1,1))
+    loss_fn = partial(loss_functions.render_NL_img_mse_sv_albedo_lstsq, mask.view(-1,1), device = device)
 elif opt.prior == 'TV':
     loss_fn = partial(loss_functions.image_mse_TV_prior, mask.view(-1,1), opt.k1, model)
 elif opt.prior == 'FH':
@@ -136,4 +138,4 @@ save_state_path = None #r'F:\Project\SIREN\siren\experiment_scripts\logs\test_in
 training.train(model=model, train_dataloader=dataloader, epochs=opt.num_epochs, lr=opt.lr,
                steps_til_summary=opt.steps_til_summary, epochs_til_checkpoint=opt.epochs_til_ckpt,
                model_dir=root_path, loss_fn=loss_fn, summary_fn=summary_fn, use_lbfgs = False, kwargs = kwargs,
-               save_state_path = save_state_path, clip_grad = False)
+               save_state_path = save_state_path, clip_grad = False, device = device)
