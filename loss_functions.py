@@ -440,7 +440,7 @@ def render_NL_img_mse_sv_albedo_lstsq(mask, model_output, gt):
     # now we test use the rendering error for all image sequence
     batch_size, numLEDs, _ = gt['LED_loc'].shape
     batch_size, numPixel, numChannel = zz.shape
-    shading_set = torch.zeros([batch_size, numPixel, numChannel, numLEDs])
+    shading_set = torch.zeros([batch_size, numPixel, numChannel, numLEDs], dtype=torch.float64)
     shading_set = shading_set.cuda()
     for i in range(numLEDs):
         LED_loc = gt['LED_loc'][:, i].unsqueeze(1)
@@ -453,13 +453,16 @@ def render_NL_img_mse_sv_albedo_lstsq(mask, model_output, gt):
         attach_shadow = torch.nn.ReLU()
         img = light_falloff * attach_shadow(shading)
         shading_set[:, :, :, i] = img
+        # shading_set[:, :, :, i] = torch.where(torch.isnan(img), shading_set[:, :, :, i], img)
 
 
     # Calc the albedo from the least square
-    albedo = (gt['img'].unsqueeze(2) * shading_set).sum(dim = 3) / (shading_set * shading_set).sum(dim = 3)
+    albedo_sum = (shading_set * shading_set).sum(dim = 3)
+    albedo_sum = torch.where(albedo_sum < 1e-8, torch.ones_like(albedo_sum) * 1e-8, albedo_sum)
+    albedo = (gt['img'].unsqueeze(2) * shading_set).sum(dim = 3) / albedo_sum
     residue = torch.abs(gt['img'].unsqueeze(2) - shading_set * albedo.unsqueeze(3))
-    img_loss_all = (mask * residue.mean(dim = 3)).mean()
 
+    img_loss_all = (mask * residue.mean(dim = 3)).mean()
 
 
     normal_loss = 1 - F.cosine_similarity(normal_dir, gt['normal_gt'], dim=-1)[..., None]
