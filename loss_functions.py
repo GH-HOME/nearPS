@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 
-import diff_operators
+from sutils import diff_operators
 import modules
 
 

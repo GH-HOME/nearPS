@@ -3,11 +3,10 @@ import numpy as np
 import torch
 import dataio
 import os
-import diff_operators
+from sutils import diff_operators, meta_modules
 from torchvision.utils import make_grid, save_image
 import skimage.measure
 import cv2
-import meta_modules
 import scipy.io.wavfile as wavfile
 import cmapy
 
