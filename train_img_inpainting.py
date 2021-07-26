@@ -42,8 +42,8 @@ p.add_argument('--model_type', type=str, default='sine',
                     'and in the future: "mixed" (first layer sine, other layers tanh)')
 
 p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained model.')
-p.add_argument('--data_folder', type=str, default='./data_rendering/normal_integration/poly2d/ball_albedo_bad_init', help='Path to data')
-p.add_argument('--custom_depth_offset', type=float, default=-0.0, help='initial depth from the LED position')
+p.add_argument('--data_folder', type=str, default='./data_rendering/ball/albedo_1/depth_offset_{}/size_{}'.format(-3, 2*256+1), help='Path to data')
+p.add_argument('--custom_depth_offset', type=float, default=0.0, help='initial depth from the LED position')
 p.add_argument('--gpu_id', type=int, default=2, help='GPU ID')
 p.add_argument('--env', type=str, default='linux', help='system environment')
 opt = p.parse_args()
