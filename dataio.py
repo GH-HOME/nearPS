@@ -40,6 +40,31 @@ def get_mgrid(sidelen, dim=2):
     return pixel_coords
 
 
+def get_mgrid_fxx_fyy(sidelen, dim=2, mask = None):
+    '''Generates a flattened grid of (x,y,...) coordinates in a range of -1 to 1.'''
+    # x [+1 -> -1] in column y [+1 -> -1] in row
+
+    if isinstance(sidelen, int):
+        sidelen = dim * (sidelen,)
+
+    if dim == 2:
+        row, column = sidelen[0], sidelen[1]
+        yy, xx = np.mgrid[:row, :column]
+        yy = np.flip(yy, axis=0)
+        pixel_coords = np.stack([xx, yy], axis=-1)[None, ...].astype(np.float32) ## -yy, xx
+        pixel_coords[0, :, :, 0] = pixel_coords[0, :, :, 0] / (sidelen[0] - 1) #xx
+        pixel_coords[0, :, :, 1] = pixel_coords[0, :, :, 1] / (sidelen[1] - 1)
+    else:
+        raise NotImplementedError('Not implemented for dim=%d' % dim)
+
+    pixel_coords -= 0.5
+    pixel_coords *= 2.
+    if mask is not None:
+        pixel_coords = pixel_coords[:, mask, :]
+    pixel_coords = torch.Tensor(pixel_coords).view(-1, dim)
+    return pixel_coords
+
+
 def get_mgrid_xx_yy(sidelen, dim=2, mask = None):
     '''Generates a flattened grid of (x,y,...) coordinates in a range of -1 to 1.'''
     if isinstance(sidelen, int):
@@ -49,6 +74,7 @@ def get_mgrid_xx_yy(sidelen, dim=2, mask = None):
         row, column = sidelen[0], sidelen[1]
         yy, xx = np.mgrid[:row, :column]
         yy = np.flip(yy, axis=0)
+        xx = np.flip(xx, axis=1)
         pixel_coords = np.stack([xx, yy], axis=-1)[None, ...].astype(np.float32) ## -yy, xx
         pixel_coords[0, :, :, 0] = pixel_coords[0, :, :, 0] / (sidelen[0] - 1) #xx
         pixel_coords[0, :, :, 1] = pixel_coords[0, :, :, 1] / (sidelen[1] - 1)
@@ -742,7 +768,7 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         self.compute_diff = compute_diff
         self.dataset = dataset
 
-        self.mgrid = get_mgrid_xx_yy(sidelength)
+        self.mgrid = get_mgrid_fxx_fyy(sidelength)
 
     def __len__(self):
         return len(self.dataset)
@@ -761,7 +787,6 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         normal_gt = self.transform(normal_gt)
         albedo_gt = self.transform(albedo_gt)
 
-
         img = img.permute(1, 2, 0).view(-1, self.dataset.img_channels)
         # img = img.permute(1, 2, 0).view(-1, 1)
         depth_gt = depth_gt.permute(1, 2, 0).view(-1, 1)
@@ -771,8 +796,7 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         in_dict = {'idx': idx, 'coords': self.mgrid}
         # gt_dict = {'img': img}
         # gt_dict = {'img': img, 'LED_loc': LED_loc}
-        gt_dict = {'img': img, 'LED_loc': LED_loc, 'depth_gt':depth_gt, 'normal_gt':normal_gt, 'albedo_gt': albedo_gt}
-
+        gt_dict = {'img': img, 'LED_loc': LED_loc, 'depth_gt': depth_gt, 'normal_gt': normal_gt, 'albedo_gt': albedo_gt}
 
         return in_dict, gt_dict
 

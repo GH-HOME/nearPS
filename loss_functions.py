@@ -468,20 +468,18 @@ def render_NL_img_mse_sv_albedo_lstsq(mask, model_output, gt, total_steps, devic
 
     img_loss_all = (mask * residue.mean(dim = 3)).mean()
 
-
+    # for debug
     normal_loss = 1 - F.cosine_similarity(normal_dir, gt['normal_gt'], dim=-1)[..., None]
     depth_loss = ((zz - gt['depth_gt']) ** 2)
 
-    # zz_mean = torch.mean(zz, dim=0, keepdim=True)
-    # zz_avg_loss =  ((zz - zz_mean) ** 2)
 
     if mask is None:
         return {'img_loss': (img_loss_all + depth_loss + normal_loss).mean()}
     else:
-        return {'img_loss': img_loss_all,
-                # 'depth_loss': (mask * (depth_loss)).mean(),
-                # 'normal_loss':(mask * (depth_loss)).mean(),
-                # 'zz_avg_loss': (mask * (zz_avg_loss)).mean()
+        return {
+                'img_loss': img_loss_all,
+                'depth_loss': (mask * (depth_loss)).mean(),
+                'normal_loss':(mask * (normal_loss)).mean(),
                 }
 
 

@@ -4,7 +4,7 @@ import cv2
 import os
 import numpy as np
 
-img_dir = r'F:\Project\SIREN\siren\experiment_scripts\logs\test_inpaint\2021_07_20_11_13_54_ball_albedo_two_channel\test'
+img_dir = '/mnt/workspace2020/heng/project/logs/test_inpaint/2021_07_26_05_30_07_ball_albedo_bad_init_handleNAN/test'
 draw_data = False
 interval = 1
 fps = 5
@@ -12,16 +12,19 @@ fps = 5
 normal_path_list = glob.glob(os.path.join(img_dir, 'iter_*_N_est.png'))
 shape_path_list = glob.glob(os.path.join(img_dir, 'iter_*_Z_est.png'))
 Err_N_path_list = glob.glob(os.path.join(img_dir, 'iter_*_ang_err*.png'))
+Err_Z_path_list = glob.glob(os.path.join(img_dir, 'iter_*_abs_err*.png'))
 
 
 normal_gif_path = os.path.join(img_dir, '0_normal_anim.gif')
 shape_gif_path = os.path.join(img_dir, '0_shape_anim.gif')
-Err_gif_path = os.path.join(img_dir, '0_Err_N_anim.gif')
+Err_gif_N_path = os.path.join(img_dir, '0_Err_N_anim.gif')
+Err_gif_Z_path = os.path.join(img_dir, '0_Err_Z_anim.gif')
 
 
 createImgGIF(normal_gif_path, normal_path_list[::interval], fps = fps)
 createImgGIF(shape_gif_path, shape_path_list[::interval], fps = fps)
-createImgGIF(Err_gif_path, Err_N_path_list[::interval], fps = fps)
+createImgGIF(Err_gif_N_path, Err_N_path_list[::interval], fps = fps)
+createImgGIF(Err_gif_Z_path, Err_Z_path_list[::interval], fps = fps)
 
 if draw_data:
     data_folder = os.path.join(img_dir, 'data')

@@ -22,7 +22,7 @@ p.add_argument('--experiment_name', type=str, default='test_inpaint', required=F
 # General training options
 p.add_argument('--batch_size', type=int, default=1)
 p.add_argument('--lr', type=float, default=1e-4, help='learning rate. default=1e-4')
-p.add_argument('--num_epochs', type=int, default=20000,
+p.add_argument('--num_epochs', type=int, default=30000,
                help='Number of epochs to train for.')
 p.add_argument('--k1', type=float, default=1, help='weight on prior')
 p.add_argument('--sparsity', type=float, default=1, help='percentage of pixels filled')
@@ -42,9 +42,9 @@ p.add_argument('--model_type', type=str, default='sine',
                     'and in the future: "mixed" (first layer sine, other layers tanh)')
 
 p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained model.')
-p.add_argument('--data_folder', type=str, default='./data_rendering/ball/albedo_1/depth_offset_{}/size_{}'.format(-3, 2*256+1), help='Path to data')
+p.add_argument('--data_folder', type=str, default='./data_rendering/pyramid/albedo_1/depth_offset_{}/size_{}'.format(-3, 2*256+1), help='Path to data')
 p.add_argument('--custom_depth_offset', type=float, default=0.0, help='initial depth from the LED position')
-p.add_argument('--gpu_id', type=int, default=2, help='GPU ID')
+p.add_argument('--gpu_id', type=int, default=3, help='GPU ID')
 p.add_argument('--env', type=str, default='linux', help='system environment')
 opt = p.parse_args()
 
@@ -113,7 +113,7 @@ model.to(device)
 # model.cuda()
 now = datetime.now() # current date and time
 date_time = now.strftime("%Y_%m_%d_%H_%M_%S")
-extra_str = 'ball_albedo_bad_init_handleNAN'
+extra_str = 'pyramid_albedo_bad_init_loss_render_NL_img_mse_sv_albedo_lstsq'
 
 root_path = os.path.join(opt.logging_root, opt.experiment_name, '{}_{}'.format(date_time, extra_str))
 
