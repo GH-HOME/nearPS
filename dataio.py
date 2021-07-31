@@ -51,6 +51,7 @@ def get_mgrid_fxx_fyy(sidelen, dim=2, mask = None):
         row, column = sidelen[0], sidelen[1]
         yy, xx = np.mgrid[:row, :column]
         yy = np.flip(yy, axis=0)
+        xx = np.flip(xx, axis=1)
         pixel_coords = np.stack([xx, yy], axis=-1)[None, ...].astype(np.float32) ## -yy, xx
         pixel_coords[0, :, :, 0] = pixel_coords[0, :, :, 0] / (sidelen[0] - 1) #xx
         pixel_coords[0, :, :, 1] = pixel_coords[0, :, :, 1] / (sidelen[1] - 1)
@@ -74,7 +75,7 @@ def get_mgrid_xx_yy(sidelen, dim=2, mask = None):
         row, column = sidelen[0], sidelen[1]
         yy, xx = np.mgrid[:row, :column]
         yy = np.flip(yy, axis=0)
-        xx = np.flip(xx, axis=1)
+
         pixel_coords = np.stack([xx, yy], axis=-1)[None, ...].astype(np.float32) ## -yy, xx
         pixel_coords[0, :, :, 0] = pixel_coords[0, :, :, 0] / (sidelen[0] - 1) #xx
         pixel_coords[0, :, :, 1] = pixel_coords[0, :, :, 1] / (sidelen[1] - 1)
@@ -733,7 +734,7 @@ class AudioFile(Dataset):
 
 
 class Shading_LEDNPY(Dataset):
-    def __init__(self, img_paths, LED_path, mask_path, normal_path, depth_path, albedo_path):
+    def __init__(self, img_paths, LED_path, mask_path, normal_path, depth_path):
         super().__init__()
 
         self.LED_set = np.load(LED_path)
@@ -743,13 +744,12 @@ class Shading_LEDNPY(Dataset):
         self.depth = np.load(depth_path)
         self.normal = np.load(normal_path)
         self.mask = np.load(mask_path)
-        self.albedo = np.load(albedo_path)
 
     def __len__(self):
         return 1
 
     def __getitem__(self, idx):
-        return {'img': self.imgs, 'LED_loc': self.LED_set, 'depth_gt':self.depth, 'normal_gt':self.normal, 'albedo_gt':self.albedo}
+        return {'img': self.imgs, 'LED_loc': self.LED_set, 'depth_gt':self.depth, 'normal_gt':self.normal}
 
 
 class Implicit2DWrapper(torch.utils.data.Dataset):
@@ -781,22 +781,19 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         img, LED_loc = data['img'], data['LED_loc']
         img = torch.tensor(img)
         LED_loc = torch.tensor(LED_loc)
-
-        depth_gt, normal_gt, albedo_gt = data['depth_gt'], data['normal_gt'], data['albedo_gt']
-        depth_gt = self.transform(depth_gt)
-        normal_gt = self.transform(normal_gt)
-        albedo_gt = self.transform(albedo_gt)
-
         img = img.permute(1, 2, 0).view(-1, self.dataset.img_channels)
-        # img = img.permute(1, 2, 0).view(-1, 1)
-        depth_gt = depth_gt.permute(1, 2, 0).view(-1, 1)
-        normal_gt = normal_gt.permute(1, 2, 0).view(-1, 3)
-        albedo_gt = albedo_gt.permute(1, 2, 0).view(-1, 1)
+
+        # depth_gt, normal_gt = data['depth_gt'], data['normal_gt']
+        # depth_gt = self.transform(depth_gt)
+        # normal_gt = self.transform(normal_gt)
+
+        # depth_gt = depth_gt.permute(1, 2, 0).view(-1, 1)
+        # normal_gt = normal_gt.permute(1, 2, 0).view(-1, 3)
 
         in_dict = {'idx': idx, 'coords': self.mgrid}
         # gt_dict = {'img': img}
-        # gt_dict = {'img': img, 'LED_loc': LED_loc}
-        gt_dict = {'img': img, 'LED_loc': LED_loc, 'depth_gt': depth_gt, 'normal_gt': normal_gt, 'albedo_gt': albedo_gt}
+        gt_dict = {'img': img, 'LED_loc': LED_loc}
+        # gt_dict = {'img': img, 'LED_loc': LED_loc, 'depth_gt': depth_gt, 'normal_gt': normal_gt}
 
         return in_dict, gt_dict
 

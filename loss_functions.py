@@ -431,7 +431,7 @@ def render_NL_img_mse_sv_albedo_lstsq(mask, model_output, gt, total_steps, devic
     nx = - dx.unsqueeze(2)
     ny = - dy.unsqueeze(2)
     nz = torch.ones_like(nx)
-    normal_set = torch.stack([nx, ny, nz], dim=2).squeeze(3)
+    normal_set = -torch.stack([nx, ny, nz], dim=2).squeeze(3)
     N_norm = torch.norm(normal_set, p=2, dim=2)
     normal_dir = normal_set / N_norm.unsqueeze(2)
 
@@ -469,8 +469,8 @@ def render_NL_img_mse_sv_albedo_lstsq(mask, model_output, gt, total_steps, devic
     img_loss_all = (mask * residue.mean(dim = 3)).mean()
 
     # for debug
-    normal_loss = 1 - F.cosine_similarity(normal_dir, gt['normal_gt'], dim=-1)[..., None]
-    depth_loss = ((zz - gt['depth_gt']) ** 2)
+    # normal_loss = 1 - F.cosine_similarity(normal_dir, gt['normal_gt'], dim=-1)[..., None]
+    # depth_loss = ((zz - gt['depth_gt']) ** 2)
 
 
     if mask is None:
@@ -478,8 +478,8 @@ def render_NL_img_mse_sv_albedo_lstsq(mask, model_output, gt, total_steps, devic
     else:
         return {
                 'img_loss': img_loss_all,
-                'depth_loss': (mask * (depth_loss)).mean(),
-                'normal_loss':(mask * (normal_loss)).mean(),
+                # 'depth_loss': (mask * (depth_loss)).mean(),
+                # 'normal_loss':(mask * (normal_loss)).mean(),
                 }
 
 

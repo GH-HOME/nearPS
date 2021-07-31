@@ -365,37 +365,51 @@ def write_image_summary(image_resolution, model, model_input, gt,
     normal_dir = normal_set / N_norm.unsqueeze(2)
     normal_dir = normal_dir.detach().cpu().numpy()
     normal_dir = normal_dir.squeeze().reshape(batch_size, h, w, 3)
-    normal_dir = normal_dir[0]
+    normal_dir = -normal_dir[0]
 
     if N_gt is not None:
         error_map, mae, _ = evalsurfaceNormal(normal_dir, N_gt, mask = mask)
         img_path = os.path.join(save_folder, 'iter_{:0>5d}_ang_err_{:.2f}.png'.format(total_steps, mae))
         plt_error_map(error_map, mask, vmax = vmaxN, withbar=True,
-                      title = 'iter_{:0>5d}_ang_err_{:.2f}'.format(total_steps, mae), img_path = img_path)
+                      title = 'Iter: {:0>5d} MAE: {:.2f}'.format(total_steps, mae), img_path = img_path)
         # err_img = plt_error_map_cv2(error_map, mask, vmin=0, vmax=vmaxN)
         # cv2.imwrite(img_path, err_img)
         print('iter_{:0>5d}_ang_err_{:.2f}'.format(total_steps, mae))
         # writer.add_image(prefix + 'ang_err_vmax_{}'.format(vmaxN), err_img, global_step=total_steps)
 
     # save_normal_no_margin(normal_dir, mask, os.path.join(save_folder, 'iter_{}_N_est.png'.format(total_steps)))
-    plt.imshow(N_2_N_show(normal_dir, mask))
-    save_plt_fig_with_title(os.path.join(save_folder, 'iter_{:0>5d}_N_est.png'.format(total_steps)), 'iter_{:0>5d} \n loss_{:2e}'.format(total_steps, loss_val))
+    normal_show = normal_dir.copy()
+    normal_show[:, :, 0] *= (-1)
+    normal_show[:, :, 2] *= (-1)
+    plt.imshow(N_2_N_show(normal_show, mask))
+    save_plt_fig_with_title(os.path.join(save_folder, 'iter_{:0>5d}_N_est.png'.format(total_steps)), 'Iter: {:0>5d} \n loss: {:.2e}'.format(total_steps, loss_val))
     # writer.add_image(prefix + 'Normal_est', N_2_N_show(normal_dir), global_step=total_steps)
+    np.save(os.path.join(save_folder, 'iter_{:0>5d}_N_est_w.npy'.format(total_steps)), normal_dir)
+
 
 
     if depth_gt is not None:
         error_map, mabse, _ = evaldepth(depth_est, depth_gt, mask = mask)
         img_path = os.path.join(save_folder, 'iter_{:0>5d}_abs_err_{:.2e}.png'.format(total_steps, mabse))
         plt_error_map(error_map, mask, vmax=vmaxD, withbar=True,
-                      title='iter_{:0>5d}_abs_err_{:.2e}'.format(total_steps, mabse), img_path=img_path)
+                      title='Iter: {:0>5d} MAbsE: {:.2e}'.format(total_steps, mabse), img_path=img_path)
         # err_img = plt_error_map_cv2(error_map, mask, vmin=0, vmax=vmaxD)
         print('iter_{:0>5d}_abs_err_{:.2e}'.format(total_steps, mabse))
         # writer.add_image(prefix + 'ang_err_vmax_{}'.format(vmaxD), err_img, global_step=total_steps)
 
     shape_file_name = os.path.join(save_folder, 'iter_{:0>5d}_Z_est.png'.format(total_steps))
     from hutils.draw_3D import generate_mesh
-    generate_mesh(depth_est, mask, shape_file_name, step_size = 2 / h, window_size = (1024, 768), title = 'iter_{:0>5d} \n \nloss_{:2e}'.format(total_steps, loss_val))
+
+    xx, yy = model_input['coords'][:, :, 0], model_input['coords'][:, :, 1]
+    xx = xx.detach().cpu().numpy().reshape(batch_size, h, w)
+    yy = yy.detach().cpu().numpy().reshape(batch_size, h, w)
+
+
+    point_cloud = np.dstack([xx[0], yy[0], depth_est])
+    generate_mesh(point_cloud, mask, shape_file_name, window_size = (1024, 768), title = 'Iter: {:0>5d} \n \nloss: {:.2e}'.format(total_steps, loss_val))
+    # generate_mesh(depth_est, mask, shape_file_name, step_size = 2 / h, window_size = (1024, 768), title = 'Iter: {:0>5d} \n \nloss: {:.2e}'.format(total_steps, loss_val))
     # writer.add_image(prefix + 'Depth_est', depth_est, global_step=total_steps)
+    np.save(os.path.join(save_folder, 'iter_{:0>5d}_depth_est_w.npy'.format(total_steps)), depth_est)
 
 
 def write_image_SV_albedo_summary(image_resolution, model, model_input, gt,

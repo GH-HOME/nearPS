@@ -133,16 +133,18 @@ def scatter_3D_default_view(obj_path = None, mesh = None, img_name = None, windo
 
 
 
-def generate_mesh(depth_map, mask, img_name, step_size, window_size, title):
+def generate_mesh(pointcloud, mask, img_name, window_size, title):
     """
-    Normal: [N, 3]
-    pointcloud: [N, 3]
+    pointcloud: [H, W, 3]
     """
 
     facets = construct_facets_from_depth_map_mask(mask)
-    vertices = construct_vertices_from_depth_map_and_mask(mask, depth_map, step_size)
+    # vertices = construct_vertices_from_depth_map_and_mask(mask, depth_map, step_size)
+    vertices = pointcloud[mask]
     surface = pv.PolyData(vertices, facets)
+    pv.save_meshio(img_name[:-3]+'obj', surface)
     scatter_3D_default_view(mesh = surface, img_name = img_name, window_size = window_size, title = title)
+
 
 
 if __name__ == "__main__":
@@ -151,3 +153,4 @@ if __name__ == "__main__":
     # mask = np.load(r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\mask.npy')
     mask = np.ones_like(depth).astype(np.bool)
     generate_mesh(depth, mask, 'test.png', 1/128, np.array([1000, 1000]), title = 'test')
+
