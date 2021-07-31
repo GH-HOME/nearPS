@@ -14,7 +14,7 @@ import numpy as np
 
 p = configargparse.ArgumentParser()
 p.add('-c', '--config_filepath', required=False, is_config_file=True, help='Path to config file.')
-p.add_argument('--extra_str', type=str, default='uA_81_L_hidden_3', help='extra discription for the experiment')
+p.add_argument('--code_id', type=str, default='commit_null', help='git commid id for the running')
 p.add_argument('--experiment_name', type=str, default='nearPS', required=False,
                help='Name of subdirectory in logging_root where summaries and checkpoints will be saved.')
 
@@ -113,7 +113,7 @@ now = datetime.now() # current date and time
 date_time = now.strftime("%Y_%m_%d_%H_%M_%S")
 
 
-root_path = os.path.join(opt.data_folder, opt.experiment_name, '{}_{}'.format(date_time, opt.extra_str))
+root_path = os.path.join(opt.data_folder, opt.experiment_name, '{}_{}'.format(date_time, opt.code_id))
 
 if custom_mask:
     mask = np.load(custom_mask)
