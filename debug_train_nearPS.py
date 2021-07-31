@@ -58,7 +58,8 @@ if opt.env == 'linux':
 device = torch.device("cuda:{gpu}".format(gpu=opt.gpu_id))
 
 # load data_path
-custom_mask = os.path.join(opt.data_folder, 'render_para/mask.npy')
+custom_mask = os.path.join(opt.data_folder, 'render_para/mask_debug.npy')
+# custom_mask = os.path.join(opt.data_folder, 'render_para/mask.npy')
 custom_image = os.path.join(opt.data_folder, 'render_img/imgs.npy')
 custom_LEDs = os.path.join(opt.data_folder, 'render_para/LED_locs.npy')
 custom_depth = os.path.join(opt.data_folder, 'render_para/depth.npy')
@@ -127,7 +128,7 @@ else:
 
 # Define the loss
 if opt.prior is None:
-    loss_fn = partial(loss_functions.render_depth_normal_loss, mask.view(-1,1), device = device)
+    loss_fn = partial(loss_functions.debug_depth_normal_loss, mask.view(-1,1), device = device)
 elif opt.prior == 'TV':
     loss_fn = partial(loss_functions.image_mse_TV_prior, mask.view(-1,1), opt.k1, model)
 elif opt.prior == 'FH':
