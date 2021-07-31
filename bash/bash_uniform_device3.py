@@ -7,9 +7,9 @@ para_folder = '/mnt/workspace2020/heng/project/data/supp'
 shape_set = np.genfromtxt(os.path.join(para_folder, 'shape_list.csv'), delimiter=',', dtype=np.str)
 scale_set = np.genfromtxt(os.path.join(para_folder, 'scale_list_64_64.csv'), delimiter=',', dtype=np.int)
 base_data_dir = '/mnt/workspace2020/heng/project/data/output_dir_near_light'
-gpu_id = 7
-commit_id = '0fb0f354'
-scale_set = [[128, 128]]
+gpu_id = 1
+commit_id = '1d86d1a9'
+scale_set = [[256, 256]]
 for resolution in scale_set:
     for shape_name in shape_set[8:]:
         filename_str = 'orthographic/lambertian/scale_{rx}_{ry}/wo_castshadow/shading/'.format(

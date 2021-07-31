@@ -783,17 +783,17 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         LED_loc = torch.tensor(LED_loc)
         img = img.permute(1, 2, 0).view(-1, self.dataset.img_channels)
 
-        # depth_gt, normal_gt = data['depth_gt'], data['normal_gt']
-        # depth_gt = self.transform(depth_gt)
-        # normal_gt = self.transform(normal_gt)
+        depth_gt, normal_gt = data['depth_gt'], data['normal_gt']
+        depth_gt = self.transform(depth_gt)
+        normal_gt = self.transform(normal_gt)
 
-        # depth_gt = depth_gt.permute(1, 2, 0).view(-1, 1)
-        # normal_gt = normal_gt.permute(1, 2, 0).view(-1, 3)
+        depth_gt = depth_gt.permute(1, 2, 0).view(-1, 1)
+        normal_gt = normal_gt.permute(1, 2, 0).view(-1, 3)
 
         in_dict = {'idx': idx, 'coords': self.mgrid}
         # gt_dict = {'img': img}
-        gt_dict = {'img': img, 'LED_loc': LED_loc}
-        # gt_dict = {'img': img, 'LED_loc': LED_loc, 'depth_gt': depth_gt, 'normal_gt': normal_gt}
+        # gt_dict = {'img': img, 'LED_loc': LED_loc}
+        gt_dict = {'img': img, 'LED_loc': LED_loc, 'depth_gt': depth_gt, 'normal_gt': normal_gt}
 
         return in_dict, gt_dict
 
