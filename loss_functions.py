@@ -435,6 +435,9 @@ def render_NL_img_mse_sv_albedo_lstsq(mask, model_output, gt, total_steps, devic
     N_norm = torch.norm(normal_set, p=2, dim=2)
     normal_dir = normal_set / N_norm.unsqueeze(2)
 
+    # normal_dir = gt['normal_gt']
+    # zz = gt['depth_gt']
+
     point_set = torch.stack([xx.unsqueeze(2), yy.unsqueeze(2), zz], dim=2).squeeze(3)
 
     # now we test use the rendering error for all image sequence
@@ -464,9 +467,15 @@ def render_NL_img_mse_sv_albedo_lstsq(mask, model_output, gt, total_steps, devic
     shading_sum = (shading_set * shading_set).sum(dim = 3)
     shading_sum = torch.where(shading_sum < 1e-8, torch.ones_like(shading_sum) * 1e-8, shading_sum)
     albedo = (gt['img'].unsqueeze(2) * attach_shadow(shading_set)).sum(dim = 3) / shading_sum
-    residue = torch.abs(gt['img'].unsqueeze(2) - attach_shadow(shading_set) * albedo.unsqueeze(3))
 
-    img_loss_all = (mask * residue.mean(dim = 3)).mean()
+
+    # L1 loss
+    # residue = torch.abs(gt['img'].unsqueeze(2) - attach_shadow(shading_set) * albedo.unsqueeze(3))
+    # img_loss_all = (mask * residue.mean(dim = 3)).mean()
+
+    # L2 loss
+    residue = gt['img'].unsqueeze(2) - attach_shadow(shading_set) * albedo.unsqueeze(3)
+    img_loss_all = (mask * (( (residue) ** 2).mean(dim = 3))).mean()
 
     # for debug
     # normal_loss = 1 - F.cosine_similarity(normal_dir, gt['normal_gt'], dim=-1)[..., None]

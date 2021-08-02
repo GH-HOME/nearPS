@@ -122,6 +122,7 @@ def scatter_3D_default_view(obj_path = None, mesh = None, img_name = None, windo
                  window_size = window_size,
                  text = title)
 
+
     # if title is not None:
     #     p.add_title(title, font_size=24)
 
@@ -149,8 +150,11 @@ def generate_mesh(pointcloud, mask, img_name, window_size, title):
 
 if __name__ == "__main__":
 
-    depth = np.load(r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\depth.npy')
+    # depth = np.load(r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\depth.npy')
     # mask = np.load(r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\mask.npy')
-    mask = np.ones_like(depth).astype(np.bool)
-    generate_mesh(depth, mask, 'test.png', 1/128, np.array([1000, 1000]), title = 'test')
+    # mask = np.ones_like(depth).astype(np.bool)
+    # generate_mesh(depth, mask, 'test.png', 1/128, np.array([1000, 1000]), title = 'test')
+    mesh = pv.read(r'F:\Project\SIREN\siren\data\output_dir_near_light\Camp\orthographic\lambertian\scale_128_128\wo_castshadow\shading\nearPS\2021_08_02_23_10_20_fabbcc08\test\iter_05000_Z_est.obj')
+
+    scatter_3D_default_view(mesh=mesh, img_name=None,  title='test')
 
