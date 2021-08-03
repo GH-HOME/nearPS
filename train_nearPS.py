@@ -20,7 +20,7 @@ p.add_argument('--experiment_name', type=str, default='nearPS', required=False,
 
 # General training options
 p.add_argument('--batch_size', type=int, default=1)
-p.add_argument('--lr', type=float, default=5e-4, help='learning rate. default=1e-4')
+p.add_argument('--lr', type=float, default=1e-4, help='learning rate. default=1e-4')
 p.add_argument('--num_epochs', type=int, default=50000,
                help='Number of epochs to train for.')
 p.add_argument('--k1', type=float, default=1, help='weight on prior')
@@ -41,7 +41,7 @@ p.add_argument('--model_type', type=str, default='sine',
                     'and in the future: "mixed" (first layer sine, other layers tanh)')
 
 p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained model.')
-p.add_argument('--data_folder', type=str, default='/mnt/workspace2020/heng/project/data/output_dir_near_light/Sphere/orthographic/lambertian/scale_128_128/wo_castshadow/shading', help='Path to data')
+p.add_argument('--data_folder', type=str, default='/mnt/workspace2020/heng/project/data/output_dir_near_light/09_reading/orthographic/lambertian/scale_256_256/wo_castshadow/shading', help='Path to data')
 p.add_argument('--custom_depth_offset', type=float, default=0.0, help='initial depth from the LED position')
 p.add_argument('--gpu_id', type=int, default=3, help='GPU ID')
 p.add_argument('--env', type=str, default='linux', help='system environment')

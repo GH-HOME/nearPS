@@ -584,6 +584,76 @@ def debug_img_render_loss(mask, model_output, gt, total_steps, device):
                 }
 
 
+def render_NL_img_mse_sv_albedo_lstsq_l1(mask, model_output, gt, total_steps, device):
+    gradients = diff_operators.gradient(model_output['model_out'], model_output['model_in'])
+    dx, dy = gradients[:, :, 0], gradients[:, :, 1]
+
+    xx, yy = model_output['model_in'][:, :, 0], model_output['model_in'][:, :, 1]
+    zz = model_output['model_out']
+    nx = - dx.unsqueeze(2)
+    ny = - dy.unsqueeze(2)
+    nz = torch.ones_like(nx)
+    normal_set = -torch.stack([nx, ny, nz], dim=2).squeeze(3)
+    N_norm = torch.norm(normal_set, p=2, dim=2)
+    normal_dir = normal_set / N_norm.unsqueeze(2)
+
+    # normal_dir = gt['normal_gt']
+    # zz = gt['depth_gt']
+
+    point_set = torch.stack([xx.unsqueeze(2), yy.unsqueeze(2), zz], dim=2).squeeze(3)
+
+    # now we test use the rendering error for all image sequence
+    batch_size, numLEDs, _ = gt['LED_loc'].shape
+    batch_size, numPixel, numChannel = zz.shape
+    shading_set = torch.zeros([batch_size, numPixel, numChannel, numLEDs], dtype=torch.float64)
+    shading_set = shading_set.to(device)
+    attach_shadow = torch.nn.ReLU()
+    for i in range(numLEDs):
+        LED_loc = gt['LED_loc'][:, i].unsqueeze(1)
+        lights = LED_loc - point_set
+        L_norm = torch.norm(lights, p=2, dim=2).unsqueeze(2)
+        light_dir = lights / L_norm
+        light_falloff = torch.pow(L_norm, -2)
+
+        shading = torch.sum(light_dir * normal_dir, dim=2, keepdims=True)
+
+        img = light_falloff * shading
+        shading_set[:, :, :, i] = img
+        # shading_set[:, :, :, i] = torch.where(torch.isnan(img), shading_set[:, :, :, i], img)
+
+
+    # Calc the albedo from the least square
+    if total_steps > 2e3:
+        shading_set = attach_shadow(shading_set)
+
+    shading_sum = (shading_set * shading_set).sum(dim = 3)
+    shading_sum = torch.where(shading_sum < 1e-8, torch.ones_like(shading_sum) * 1e-8, shading_sum)
+    albedo = (gt['img'].unsqueeze(2) * attach_shadow(shading_set)).sum(dim = 3) / shading_sum
+
+
+    # L1 loss
+    residue = torch.abs(gt['img'].unsqueeze(2) - attach_shadow(shading_set) * albedo.unsqueeze(3))
+    img_loss_all = (mask * residue.mean(dim = 3)).mean()
+
+    # L2 loss
+    # residue = gt['img'].unsqueeze(2) - attach_shadow(shading_set) * albedo.unsqueeze(3)
+    # img_loss_all = (mask * (( (residue) ** 2).mean(dim = 3))).mean()
+
+    # for debug
+    # normal_loss = 1 - F.cosine_similarity(normal_dir, gt['normal_gt'], dim=-1)[..., None]
+    # depth_loss = ((zz - gt['depth_gt']) ** 2)
+
+
+    if mask is None:
+        return {'img_loss': (img_loss_all + depth_loss + normal_loss).mean()}
+    else:
+        return {
+                'img_loss': img_loss_all,
+                # 'depth_loss': (mask * (depth_loss)).mean(),
+                # 'normal_loss':(mask * (normal_loss)).mean(),
+                }
+
+
 def render_SCNL_img_mse_sv_albedo_lstsq(mask, model_output, gt):
     gradients = diff_operators.gradient(model_output['model_out'], model_output['model_in'])
     dx, dy = gradients[:, :, 0], gradients[:, :, 1]

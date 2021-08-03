@@ -14,7 +14,7 @@ import numpy as np
 
 p = configargparse.ArgumentParser()
 p.add('-c', '--config_filepath', required=False, is_config_file=True, help='Path to config file.')
-p.add_argument('--code_id', type=str, default='fabbcc08', help='git commid id for the running')
+p.add_argument('--code_id', type=str, default='re_train_l1', help='git commid id for the running')
 p.add_argument('--experiment_name', type=str, default='nearPS', required=False,
                help='Name of subdirectory in logging_root where summaries and checkpoints will be saved.')
 
@@ -43,7 +43,7 @@ p.add_argument('--model_type', type=str, default='sine',
 p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained model.')
 p.add_argument('--data_folder', type=str, default='/mnt/workspace2020/heng/project/data/output_dir_near_light/04_bunny/orthographic/lambertian/scale_256_256/wo_castshadow/shading', help='Path to data')
 p.add_argument('--custom_depth_offset', type=float, default=0.0, help='initial depth from the LED position')
-p.add_argument('--gpu_id', type=int, default=1, help='GPU ID')
+p.add_argument('--gpu_id', type=int, default=4, help='GPU ID')
 p.add_argument('--env', type=str, default='linux', help='system environment')
 opt = p.parse_args()
 
@@ -58,8 +58,8 @@ if opt.env == 'linux':
 device = torch.device("cuda:{gpu}".format(gpu=opt.gpu_id))
 
 # load data_path
-custom_mask = os.path.join(opt.data_folder, 'render_para/mask_debug.npy')
-# custom_mask = os.path.join(opt.data_folder, 'render_para/mask.npy')
+# custom_mask = os.path.join(opt.data_folder, 'render_para/mask_debug.npy')
+custom_mask = os.path.join(opt.data_folder, 'render_para/mask.npy')
 custom_image = os.path.join(opt.data_folder, 'render_img/imgs.npy')
 custom_LEDs = os.path.join(opt.data_folder, 'render_para/LED_locs.npy')
 custom_depth = os.path.join(opt.data_folder, 'render_para/depth.npy')
@@ -94,7 +94,7 @@ dataloader = DataLoader(coord_dataset, shuffle=True, batch_size=opt.batch_size, 
 
 # Define the model.
 if opt.model_type == 'sine' or opt.model_type == 'relu' or opt.model_type == 'tanh':
-    model = modules.SingleBVPNet(type=opt.model_type, mode='mlp', out_features=1, sidelength=image_resolution, num_hidden_layers = 5,
+    model = modules.SingleBVPNet(type=opt.model_type, mode='mlp', out_features=1, sidelength=image_resolution, num_hidden_layers = 3,
                                  downsample=opt.downsample, last_layer_offset = offset)
 
     # model = modules.Siren(in_features=2, out_features=1, hidden_features=256,
@@ -128,7 +128,7 @@ else:
 
 # Define the loss
 if opt.prior is None:
-    loss_fn = partial(loss_functions.render_NL_img_mse_sv_albedo_lstsq, mask.view(-1,1), device = device)
+    loss_fn = partial(loss_functions.render_NL_img_mse_sv_albedo_lstsq_l1, mask.view(-1,1), device = device)
 elif opt.prior == 'TV':
     loss_fn = partial(loss_functions.image_mse_TV_prior, mask.view(-1,1), opt.k1, model)
 elif opt.prior == 'FH':
@@ -143,7 +143,7 @@ kwargs = {'save_folder': os.path.join(root_path, 'test'),
           'mask': np.load(custom_mask)}
 
 
-save_state_path = None# r'F:\Project\SIREN\siren\data\output_dir_near_light\04_bunny\orthographic\lambertian\scale_256_256\wo_castshadow\shading\nearPS\2021_07_31_20_43_22_commit_debug\checkpoints\model_final.pth'
+save_state_path = None#'/mnt/workspace2020/heng/project/data/output_dir_near_light/04_bunny/orthographic/lambertian/scale_256_256/wo_castshadow/shading/nearPS/2021_07_31_08_36_50_1d86d1a9/checkpoints/model_final.pth'
 training.train(model=model, train_dataloader=dataloader, epochs=opt.num_epochs, lr=opt.lr,
                steps_til_summary=opt.steps_til_summary, epochs_til_checkpoint=opt.epochs_til_ckpt,
                model_dir=root_path, loss_fn=loss_fn, summary_fn=summary_fn, use_lbfgs = False, kwargs = kwargs,
