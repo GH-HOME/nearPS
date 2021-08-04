@@ -108,8 +108,16 @@ def scatter_3D_default_view(obj_path = None, mesh = None, img_name = None, windo
     if mesh is None and obj_path is not None:
         mesh = pv.read(obj_path)
 
+
     # step 2: find the good camera pose
+    cpos = [
+        (0, 1, -2),
+        (0, 0, 2),
+        (0, 1, 0),
+    ]
+
     cpos_init, img = pv.plot(mesh,
+                 cpos=cpos,
                  color="w",
                  smooth_shading=True,
                  screenshot=True,
@@ -134,6 +142,52 @@ def scatter_3D_default_view(obj_path = None, mesh = None, img_name = None, windo
 
 
 
+def scatter_3D_default_view_debug(obj_path = None, mesh = None, img_name = None, window_size = [512, 384], title = None):
+    """ save the screen shot of obj files in the same view point"""
+
+    # specular parameter
+    ambient_value = 0.3
+    diffuse_value = 0.5
+    specular_value = 0.3
+    p = pv.Plotter(border=False)
+
+    p.set_background(color="white")
+
+    if mesh is None and obj_path is not None:
+        mesh = pv.read(obj_path)
+
+    # step 2: find the good camera pose
+
+    cpos = [
+        (0, 0, -2),
+        (0, 0, 2),
+        (0, 1, 0),
+    ]
+
+    cpos_init = pv.plot(mesh,
+                cpos=cpos,
+                 color="w",
+                 smooth_shading=True,
+                 # screenshot=True,
+                 # off_screen=True,
+                 diffuse=diffuse_value,
+                 ambient=ambient_value,
+                 specular=specular_value,
+                 show_scalar_bar=False,
+                 show_axes=False,
+                 window_size = window_size,
+                 text = title)
+    print(cpos_init)
+
+    # if title is not None:
+    #     p.add_title(title, font_size=24)
+
+    pv.close_all()
+    if img_name is not None:
+        cv2.imwrite(img_name, img)
+    else:
+        pv.plot()
+
 def generate_mesh(pointcloud, mask, img_name, window_size, title):
     """
     pointcloud: [H, W, 3]
@@ -154,7 +208,7 @@ if __name__ == "__main__":
     # mask = np.load(r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\mask.npy')
     # mask = np.ones_like(depth).astype(np.bool)
     # generate_mesh(depth, mask, 'test.png', 1/128, np.array([1000, 1000]), title = 'test')
-    mesh = pv.read(r'F:\Project\SIREN\siren\data\output_dir_near_light\Camp\orthographic\lambertian\scale_128_128\wo_castshadow\shading\nearPS\2021_08_02_23_10_20_fabbcc08\test\iter_05000_Z_est.obj')
+    mesh = pv.read(r'F:\Project\SIREN\siren\data\output_dir_near_light\04_bunny\orthographic\lambertian\scale_256_256\wo_castshadow\shading\nearPS\2021_08_03_21_59_23_26cdc382\test\iter_16000_Z_est.obj')
 
-    scatter_3D_default_view(mesh=mesh, img_name=None,  title='test')
+    scatter_3D_default_view_debug(mesh=mesh, img_name=None,  title='test')
 

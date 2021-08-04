@@ -14,7 +14,7 @@ import numpy as np
 
 p = configargparse.ArgumentParser()
 p.add('-c', '--config_filepath', required=False, is_config_file=True, help='Path to config file.')
-p.add_argument('--code_id', type=str, default='commit_null', help='git commid id for the running')
+p.add_argument('--code_id', type=str, default='26cdc382', help='git commid id for the running')
 p.add_argument('--experiment_name', type=str, default='nearPS', required=False,
                help='Name of subdirectory in logging_root where summaries and checkpoints will be saved.')
 
@@ -41,8 +41,8 @@ p.add_argument('--model_type', type=str, default='sine',
                     'and in the future: "mixed" (first layer sine, other layers tanh)')
 
 p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained model.')
-p.add_argument('--data_folder', type=str, default='./data/output_dir_near_light/04_bunny/orthographic/lambertian/scale_256_256/wo_castshadow/shading', help='Path to data')
-p.add_argument('--custom_depth_offset', type=float, default=0.0, help='initial depth from the LED position')
+p.add_argument('--data_folder', type=str, default='./data_rendering/bunny_ear/orthographic/lambertian/scale_256_256/wo_castshadow/shading', help='Path to data')
+p.add_argument('--custom_depth_offset', type=float, default=3, help='initial depth from the LED position')
 p.add_argument('--gpu_id', type=int, default=1, help='GPU ID')
 p.add_argument('--env', type=str, default='win32', help='system environment')
 opt = p.parse_args()
@@ -127,7 +127,7 @@ else:
 
 # Define the loss
 if opt.prior is None:
-    loss_fn = partial(loss_functions.render_NL_img_mse_sv_albedo_lstsq_l1, mask.view(-1,1), device = device)
+    loss_fn = partial(loss_functions.debug_depth_normal_loss, mask.view(-1,1), device = device)
 elif opt.prior == 'TV':
     loss_fn = partial(loss_functions.image_mse_TV_prior, mask.view(-1,1), opt.k1, model)
 elif opt.prior == 'FH':

@@ -54,16 +54,6 @@ def train(model, train_dataloader, epochs, lr, steps_til_summary, epochs_til_che
                 np.savetxt(os.path.join(checkpoints_dir, 'train_losses_epoch_%04d.txt' % epoch),
                            np.array(train_losses))
 
-            # if epoch == 0:
-            #     for param in model.parameters():
-            #         param.requires_grad = False
-            #     net_params['net.net.4.0.bias'].requires_grad = True
-            #     optim = torch.optim.Adam(lr=lr, params=model.parameters())
-            # if epoch == 5000:
-            #     for param in model.parameters():
-            #         param.requires_grad = True
-            #     optim = torch.optim.Adam(lr=lr, params=model.parameters())
-
 
             for step, (model_input, gt) in enumerate(train_dataloader):
                 start_time = time.time()
