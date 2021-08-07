@@ -560,17 +560,30 @@ def render_NL_img_mse_sv_albedo_lstsq_l1(mask, model_output, gt, total_steps, de
 
     xx, yy = model_output['model_in'][:, :, 0], model_output['model_in'][:, :, 1]
     zz = model_output['model_out']
-    nx = - dx.unsqueeze(2)
-    ny = - dy.unsqueeze(2)
-    nz = torch.ones_like(nx)
-    normal_set = -torch.stack([nx, ny, nz], dim=2).squeeze(3)
+    du = dx.unsqueeze(2)
+    dv = dy.unsqueeze(2)
+    dz = torch.ones_like(du)
+
+    if 'cam_para' in gt:
+        # perspective projection
+        focal_len, sensor_height, sensor_width = gt['cam_para'][0]
+        sensor_xx, sensor_yy = sensor_width / 2 * xx.unsqueeze(2), sensor_height / 2 * yy.unsqueeze(2)
+        dZ_sensor_x, dZ_sensor_y = du * 2 / sensor_width, dv * 2 / sensor_height
+        nxp = dZ_sensor_x * focal_len
+        nyp = dZ_sensor_y * focal_len
+        nzp = - (zz + sensor_xx*dZ_sensor_x + sensor_yy * dZ_sensor_y)
+        normal_set = torch.stack([nxp, nyp, nzp], dim=2).squeeze(3)
+
+        point_set = torch.stack([sensor_xx * zz / focal_len,
+                                 sensor_yy * zz / focal_len,
+                                 zz], dim=2).squeeze(3)
+
+    else:
+        # orthographic projection
+        normal_set = torch.stack([du, dv, -dz], dim=2).squeeze(3)
+        point_set = torch.stack([xx.unsqueeze(2), yy.unsqueeze(2), zz], dim=2).squeeze(3)
     N_norm = torch.norm(normal_set, p=2, dim=2)
     normal_dir = normal_set / N_norm.unsqueeze(2)
-
-    # normal_dir = gt['normal_gt']
-    # zz = gt['depth_gt']
-
-    point_set = torch.stack([xx.unsqueeze(2), yy.unsqueeze(2), zz], dim=2).squeeze(3)
 
     # now we test use the rendering error for all image sequence
     batch_size, numLEDs, _ = gt['LED_loc'].shape
