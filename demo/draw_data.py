@@ -4,7 +4,7 @@ import cv2
 import os
 import numpy as np
 
-img_dir = '/mnt/workspace2020/heng/project/logs/test_inpaint/2021_07_26_05_30_07_ball_albedo_bad_init_handleNAN/test'
+img_dir = '/mnt/workspace2020/heng/project/data/output_dir_near_light/10_armadillo/orthographic/lambertian/scale_256_256/wo_castshadow/shading/nearPS/2021_08_03_01_42_40_c421a973/test'
 draw_data = False
 interval = 1
 fps = 5

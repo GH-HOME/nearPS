@@ -734,7 +734,7 @@ class AudioFile(Dataset):
 
 
 class Shading_LEDNPY(Dataset):
-    def __init__(self, img_paths, LED_path, mask_path, normal_path, depth_path):
+    def __init__(self, img_paths, LED_path, mask_path, normal_path, depth_path, camera_para = None):
         super().__init__()
 
         self.LED_set = np.load(LED_path)
@@ -744,12 +744,13 @@ class Shading_LEDNPY(Dataset):
         self.depth = np.load(depth_path)
         self.normal = np.load(normal_path)
         self.mask = np.load(mask_path)
+        self.camera_para = camera_para
 
     def __len__(self):
         return 1
 
     def __getitem__(self, idx):
-        return {'img': self.imgs, 'LED_loc': self.LED_set, 'depth_gt':self.depth, 'normal_gt':self.normal}
+        return {'img': self.imgs, 'LED_loc': self.LED_set, 'cam_para': self.camera_para,  'depth_gt':self.depth, 'normal_gt':self.normal}
 
 
 class Implicit2DWrapper(torch.utils.data.Dataset):
@@ -783,6 +784,7 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         LED_loc = torch.tensor(LED_loc)
         img = img.permute(1, 2, 0).view(-1, self.dataset.img_channels)
 
+
         depth_gt, normal_gt = data['depth_gt'], data['normal_gt']
         depth_gt = self.transform(depth_gt)
         normal_gt = self.transform(normal_gt)
@@ -793,7 +795,10 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         in_dict = {'idx': idx, 'coords': self.mgrid}
         # gt_dict = {'img': img}
         # gt_dict = {'img': img, 'LED_loc': LED_loc}
-        gt_dict = {'img': img, 'LED_loc': LED_loc, 'depth_gt': depth_gt, 'normal_gt': normal_gt}
+        if data['cam_para'] is not None:
+            gt_dict = {'img': img, 'LED_loc': LED_loc, 'cam_para': torch.tensor(data['cam_para']), 'depth_gt': depth_gt, 'normal_gt': normal_gt}
+        else:
+            gt_dict = {'img': img, 'LED_loc': LED_loc, 'depth_gt': depth_gt, 'normal_gt': normal_gt}
 
         return in_dict, gt_dict
 

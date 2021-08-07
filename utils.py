@@ -357,15 +357,28 @@ def write_image_summary(image_resolution, model, model_input, gt,
     img_gradient = diff_operators.gradient(model_output['model_out'], model_output['model_in'])
 
     dx, dy = img_gradient[:, :, 0], img_gradient[:, :, 1]
-    nx = - dx.unsqueeze(2)
-    ny = - dy.unsqueeze(2)
-    nz = torch.ones_like(nx)
-    normal_set = torch.stack([nx, ny, nz], dim=2).squeeze(3)
+    xx, yy = model_output['model_in'][:, :, 0], model_output['model_in'][:, :, 1]
+    zz = model_output['model_out']
+    du = dx.unsqueeze(2)
+    dv = dy.unsqueeze(2)
+    dz = torch.ones_like(du)
+
+    if 'cam_para' in gt:
+        focal_len, sensor_height, sensor_width = gt['cam_para'][0]
+        sensor_xx, sensor_yy = sensor_width / 2 * xx.unsqueeze(2), sensor_height / 2 * yy.unsqueeze(2)
+        dZ_sensor_x, dZ_sensor_y = du * 2 / sensor_width, dv * 2 / sensor_height
+        nxp = dZ_sensor_x * focal_len
+        nyp = dZ_sensor_y * focal_len
+        nzp = - (zz + sensor_xx*dZ_sensor_x + sensor_yy * dZ_sensor_y)
+        normal_set = torch.stack([nxp, nyp, nzp], dim=2).squeeze(3)
+    else:
+        normal_set = torch.stack([du, dv, -dz], dim=2).squeeze(3)
     N_norm = torch.norm(normal_set, p=2, dim=2)
     normal_dir = normal_set / N_norm.unsqueeze(2)
+
     normal_dir = normal_dir.detach().cpu().numpy()
     normal_dir = normal_dir.squeeze().reshape(batch_size, h, w, 3)
-    normal_dir = -normal_dir[0]
+    normal_dir = normal_dir[0]
 
     if N_gt is not None:
         error_map, mae, _ = evalsurfaceNormal(normal_dir, N_gt, mask = mask)

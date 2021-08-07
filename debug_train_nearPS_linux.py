@@ -21,7 +21,7 @@ p.add_argument('--experiment_name', type=str, default='nearPS', required=False,
 # General training options
 p.add_argument('--batch_size', type=int, default=1)
 p.add_argument('--lr', type=float, default=1e-4, help='learning rate. default=1e-4')
-p.add_argument('--num_epochs', type=int, default=60000,
+p.add_argument('--num_epochs', type=int, default=100000,
                help='Number of epochs to train for.')
 p.add_argument('--k1', type=float, default=1, help='weight on prior')
 p.add_argument('--sparsity', type=float, default=1, help='percentage of pixels filled')
@@ -41,7 +41,7 @@ p.add_argument('--model_type', type=str, default='sine',
                     'and in the future: "mixed" (first layer sine, other layers tanh)')
 
 p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained model.')
-p.add_argument('--data_folder', type=str, default='/mnt/workspace2020/heng/project/data/output_dir_near_light/04_bunny/orthographic/lambertian/scale_256_256/wo_castshadow/shading', help='Path to data')
+p.add_argument('--data_folder', type=str, default='/mnt/workspace2020/heng/project/data/output_dir_near_light/10_armadillo/orthographic/lambertian/scale_256_256/wo_castshadow/shading', help='Path to data')
 p.add_argument('--custom_depth_offset', type=float, default=0.0, help='initial depth from the LED position')
 p.add_argument('--gpu_id', type=int, default=2, help='GPU ID')
 p.add_argument('--env', type=str, default='linux', help='system environment')
@@ -143,7 +143,7 @@ kwargs = {'save_folder': os.path.join(root_path, 'test'),
           'mask': np.load(custom_mask)}
 
 
-save_state_path = '/mnt/workspace2020/heng/project/data/output_dir_near_light/04_bunny/orthographic/lambertian/scale_256_256/wo_castshadow/shading/nearPS/2021_08_03_13_41_09_re_train_l1/checkpoints/model_final.pth'
+save_state_path = None#'/mnt/workspace2020/heng/project/data/output_dir_near_light/04_bunny/orthographic/lambertian/scale_256_256/wo_castshadow/shading/nearPS/2021_08_03_13_41_09_re_train_l1/checkpoints/model_final.pth'
 training.train(model=model, train_dataloader=dataloader, epochs=opt.num_epochs, lr=opt.lr,
                steps_til_summary=opt.steps_til_summary, epochs_til_checkpoint=opt.epochs_til_ckpt,
                model_dir=root_path, loss_fn=loss_fn, summary_fn=summary_fn, use_lbfgs = False, kwargs = kwargs,

@@ -11,10 +11,11 @@ from functools import partial
 import torch
 from torchvision.transforms import ToTensor
 import numpy as np
+import configparser
 
 p = configargparse.ArgumentParser()
 p.add('-c', '--config_filepath', required=False, is_config_file=True, help='Path to config file.')
-p.add_argument('--code_id', type=str, default='commit_null', help='git commid id for the running')
+p.add_argument('--code_id', type=str, default='debug', help='git commid id for the running')
 p.add_argument('--experiment_name', type=str, default='nearPS', required=False,
                help='Name of subdirectory in logging_root where summaries and checkpoints will be saved.')
 
@@ -41,10 +42,10 @@ p.add_argument('--model_type', type=str, default='sine',
                     'and in the future: "mixed" (first layer sine, other layers tanh)')
 
 p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained model.')
-p.add_argument('--data_folder', type=str, default='/mnt/workspace2020/heng/project/data/output_dir_near_light/04_bunny/orthographic/lambertian/scale_256_256/wo_castshadow/shading', help='Path to data')
+p.add_argument('--data_folder', type=str, default='./data/output_dir_near_light/Sphere/perspective/lambertian/scale_128_128/wo_castshadow/shading', help='Path to data')
 p.add_argument('--custom_depth_offset', type=float, default=0.0, help='initial depth from the LED position')
-p.add_argument('--gpu_id', type=int, default=7, help='GPU ID')
-p.add_argument('--env', type=str, default='linux', help='system environment')
+p.add_argument('--gpu_id', type=int, default=1, help='GPU ID')
+p.add_argument('--env', type=str, default='win32', help='system environment')
 opt = p.parse_args()
 
 if opt.env == 'linux':
@@ -59,12 +60,17 @@ device = torch.device("cuda:{gpu}".format(gpu=opt.gpu_id))
 
 # load data_path
 custom_mask = os.path.join(opt.data_folder, 'render_para/mask.npy')
-custom_image = os.path.join(opt.data_folder, 'render_img/imgs.npy')
+custom_image = os.path.join(opt.data_folder, 'render_img/imgs_hand.npy')
 custom_LEDs = os.path.join(opt.data_folder, 'render_para/LED_locs.npy')
 custom_depth = os.path.join(opt.data_folder, 'render_para/depth.npy')
 custom_normal = os.path.join(opt.data_folder, 'render_para/normal_world.npy')
-
-
+custom_camera_para = os.path.join(opt.data_folder, 'save.ini')
+camera_para_config = configparser.ConfigParser()
+camera_para_config.optionxform = str
+camera_para_config.read(custom_camera_para)
+camera_para = np.array([float(camera_para_config['camera']['focal_length']),
+                        float(camera_para_config['camera']['sensor_height']),
+                        float(camera_para_config['camera']['sensor_width'])]) / 1000  # mm --> m
 
 
 
@@ -77,7 +83,7 @@ if opt.dataset == 'camera_downsampled':
     coord_dataset = dataio.Implicit2DWrapper(img_dataset, sidelength=256, compute_diff='all')
     image_resolution = (256, 256)
 if opt.dataset == 'custom':
-    img_dataset = dataio.Shading_LEDNPY(custom_image, custom_LEDs, custom_mask, custom_normal, custom_depth)
+    img_dataset = dataio.Shading_LEDNPY(custom_image, custom_LEDs, custom_mask, custom_normal, custom_depth, camera_para)
     # img_dataset = dataio.SurfaceTent(128)
     if len(img_dataset[0]['img'].shape) == 3:
         numImg, h, w = img_dataset[0]['img'].shape
@@ -93,7 +99,7 @@ dataloader = DataLoader(coord_dataset, shuffle=True, batch_size=opt.batch_size, 
 
 # Define the model.
 if opt.model_type == 'sine' or opt.model_type == 'relu' or opt.model_type == 'tanh':
-    model = modules.SingleBVPNet(type=opt.model_type, mode='mlp', out_features=1, sidelength=image_resolution, num_hidden_layers = 5,
+    model = modules.SingleBVPNet(type=opt.model_type, mode='mlp', out_features=1, sidelength=image_resolution, num_hidden_layers = 3,
                                  downsample=opt.downsample, last_layer_offset = offset)
 
     # model = modules.Siren(in_features=2, out_features=1, hidden_features=256,
@@ -127,7 +133,7 @@ else:
 
 # Define the loss
 if opt.prior is None:
-    loss_fn = partial(loss_functions.render_NL_img_mse_sv_albedo_lstsq_l1, mask.view(-1,1), device = device)
+    loss_fn = partial(loss_functions.debug_img_render_loss, mask.view(-1,1), device = device)
 elif opt.prior == 'TV':
     loss_fn = partial(loss_functions.image_mse_TV_prior, mask.view(-1,1), opt.k1, model)
 elif opt.prior == 'FH':
