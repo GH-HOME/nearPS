@@ -746,6 +746,9 @@ class Shading_LEDNPY(Dataset):
         self.mask = np.load(mask_path)
         self.camera_para = camera_para
 
+        if len(self.imgs.shape) == 4: # RGB
+            self.imgs = np.mean(self.imgs, axis=3)
+
     def __len__(self):
         return 1
 

@@ -487,36 +487,8 @@ def render_NL_img_mse_sv_albedo_lstsq_l2(mask, model_output, gt, total_steps, de
                 }
 
 
+
 def debug_depth_normal_loss(mask, model_output, gt, total_steps, device):
-    gradients = diff_operators.gradient(model_output['model_out'], model_output['model_in'])
-    dx, dy = gradients[:, :, 0], gradients[:, :, 1]
-
-    xx, yy = model_output['model_in'][:, :, 0], model_output['model_in'][:, :, 1]
-    zz = model_output['model_out']
-    nx = - dx.unsqueeze(2)
-    ny = - dy.unsqueeze(2)
-    nz = torch.ones_like(nx)
-    normal_set = -torch.stack([nx, ny, nz], dim=2).squeeze(3)
-    N_norm = torch.norm(normal_set, p=2, dim=2)
-    normal_dir = normal_set / N_norm.unsqueeze(2)
-
-
-    # for debug
-    normal_loss = 1 - F.cosine_similarity(normal_dir, gt['normal_gt'], dim=-1)[..., None]
-    depth_loss = ((zz - gt['depth_gt']) ** 2)
-
-
-    if mask is None:
-        return {'img_loss': (depth_loss + normal_loss).mean()}
-    else:
-        return {
-                # 'img_loss': img_loss_all,
-                'depth_loss': (mask * (depth_loss)).mean(),
-                'normal_loss':(mask * (normal_loss)).mean(),
-                }
-
-
-def debug_img_render_loss(mask, model_output, gt, total_steps, device):
     gradients = diff_operators.gradient(model_output['model_out'], model_output['model_in'])
     dx, dy = gradients[:, :, 0], gradients[:, :, 1]
 
@@ -564,6 +536,9 @@ def render_NL_img_mse_sv_albedo_lstsq_l1(mask, model_output, gt, total_steps, de
     dv = dy.unsqueeze(2)
     dz = torch.ones_like(du)
 
+    # for debug
+    # zz = gt['depth_gt']
+
     if 'cam_para' in gt:
         # perspective projection
         focal_len, sensor_height, sensor_width = gt['cam_para'][0]
@@ -584,6 +559,9 @@ def render_NL_img_mse_sv_albedo_lstsq_l1(mask, model_output, gt, total_steps, de
         point_set = torch.stack([xx.unsqueeze(2), yy.unsqueeze(2), zz], dim=2).squeeze(3)
     N_norm = torch.norm(normal_set, p=2, dim=2)
     normal_dir = normal_set / N_norm.unsqueeze(2)
+
+    # for debug
+    # normal_dir = gt['normal_gt']
 
     # now we test use the rendering error for all image sequence
     batch_size, numLEDs, _ = gt['LED_loc'].shape

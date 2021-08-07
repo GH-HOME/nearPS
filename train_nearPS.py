@@ -60,7 +60,7 @@ device = torch.device("cuda:{gpu}".format(gpu=opt.gpu_id))
 
 # load data_path
 custom_mask = os.path.join(opt.data_folder, 'render_para/mask.npy')
-custom_image = os.path.join(opt.data_folder, 'render_img/imgs_hand.npy')
+custom_image = os.path.join(opt.data_folder, 'render_img/imgs_blender.npy')
 custom_LEDs = os.path.join(opt.data_folder, 'render_para/LED_locs.npy')
 custom_depth = os.path.join(opt.data_folder, 'render_para/depth.npy')
 custom_normal = os.path.join(opt.data_folder, 'render_para/normal_world.npy')
