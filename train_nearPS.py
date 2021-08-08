@@ -43,9 +43,9 @@ p.add_argument('--model_type', type=str, default='sine',
 
 p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained model.')
 p.add_argument('--data_folder', type=str, default='./data/output_dir_near_light/Sphere/perspective/lambertian/scale_128_128/wo_castshadow/shading', help='Path to data')
-p.add_argument('--custom_depth_offset', type=float, default=0.0, help='initial depth from the LED position')
+p.add_argument('--custom_depth_offset', type=float, default=3.0, help='initial depth from the LED position')
 p.add_argument('--gpu_id', type=int, default=1, help='GPU ID')
-p.add_argument('--env', type=str, default='win32', help='system environment')
+p.add_argument('--env', type=str, default='linux', help='system environment')
 opt = p.parse_args()
 
 if opt.env == 'linux':
@@ -99,7 +99,7 @@ dataloader = DataLoader(coord_dataset, shuffle=True, batch_size=opt.batch_size, 
 
 # Define the model.
 if opt.model_type == 'sine' or opt.model_type == 'relu' or opt.model_type == 'tanh':
-    model = modules.SingleBVPNet(type=opt.model_type, mode='mlp', out_features=1, sidelength=image_resolution, num_hidden_layers = 3,
+    model = modules.SingleBVPNet(type=opt.model_type, mode='mlp', out_features=1, sidelength=image_resolution, num_hidden_layers = 5,
                                  downsample=opt.downsample, last_layer_offset = offset)
 
     # model = modules.Siren(in_features=2, out_features=1, hidden_features=256,

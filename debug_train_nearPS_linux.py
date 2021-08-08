@@ -11,10 +11,11 @@ from functools import partial
 import torch
 from torchvision.transforms import ToTensor
 import numpy as np
+import configparser
 
 p = configargparse.ArgumentParser()
 p.add('-c', '--config_filepath', required=False, is_config_file=True, help='Path to config file.')
-p.add_argument('--code_id', type=str, default='re_train_l1', help='git commid id for the running')
+p.add_argument('--code_id', type=str, default='debug', help='git commid id for the running')
 p.add_argument('--experiment_name', type=str, default='nearPS', required=False,
                help='Name of subdirectory in logging_root where summaries and checkpoints will be saved.')
 
@@ -41,9 +42,9 @@ p.add_argument('--model_type', type=str, default='sine',
                     'and in the future: "mixed" (first layer sine, other layers tanh)')
 
 p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained model.')
-p.add_argument('--data_folder', type=str, default='/mnt/workspace2020/heng/project/data/output_dir_near_light/10_armadillo/orthographic/lambertian/scale_256_256/wo_castshadow/shading', help='Path to data')
-p.add_argument('--custom_depth_offset', type=float, default=0.0, help='initial depth from the LED position')
-p.add_argument('--gpu_id', type=int, default=2, help='GPU ID')
+p.add_argument('--data_folder', type=str, default='/mnt/workspace2020/heng/project/data/output_dir_near_light/09_reading/perspective/lambertian/scale_256_256/wo_castshadow/shading', help='Path to data')
+p.add_argument('--custom_depth_offset', type=float, default=3.0, help='initial depth from the LED position')
+p.add_argument('--gpu_id', type=int, default=7, help='GPU ID')
 p.add_argument('--env', type=str, default='linux', help='system environment')
 opt = p.parse_args()
 
@@ -58,14 +59,18 @@ if opt.env == 'linux':
 device = torch.device("cuda:{gpu}".format(gpu=opt.gpu_id))
 
 # load data_path
-# custom_mask = os.path.join(opt.data_folder, 'render_para/mask_debug.npy')
 custom_mask = os.path.join(opt.data_folder, 'render_para/mask.npy')
-custom_image = os.path.join(opt.data_folder, 'render_img/imgs.npy')
+custom_image = os.path.join(opt.data_folder, 'render_img/imgs_blender.npy')
 custom_LEDs = os.path.join(opt.data_folder, 'render_para/LED_locs.npy')
 custom_depth = os.path.join(opt.data_folder, 'render_para/depth.npy')
 custom_normal = os.path.join(opt.data_folder, 'render_para/normal_world.npy')
-
-
+custom_camera_para = os.path.join(opt.data_folder, 'save.ini')
+camera_para_config = configparser.ConfigParser()
+camera_para_config.optionxform = str
+camera_para_config.read(custom_camera_para)
+camera_para = np.array([float(camera_para_config['camera']['focal_length']),
+                        float(camera_para_config['camera']['sensor_height']),
+                        float(camera_para_config['camera']['sensor_width'])]) / 1000  # mm --> m
 
 
 
@@ -78,7 +83,7 @@ if opt.dataset == 'camera_downsampled':
     coord_dataset = dataio.Implicit2DWrapper(img_dataset, sidelength=256, compute_diff='all')
     image_resolution = (256, 256)
 if opt.dataset == 'custom':
-    img_dataset = dataio.Shading_LEDNPY(custom_image, custom_LEDs, custom_mask, custom_normal, custom_depth)
+    img_dataset = dataio.Shading_LEDNPY(custom_image, custom_LEDs, custom_mask, custom_normal, custom_depth, camera_para)
     # img_dataset = dataio.SurfaceTent(128)
     if len(img_dataset[0]['img'].shape) == 3:
         numImg, h, w = img_dataset[0]['img'].shape
@@ -143,7 +148,7 @@ kwargs = {'save_folder': os.path.join(root_path, 'test'),
           'mask': np.load(custom_mask)}
 
 
-save_state_path = None#'/mnt/workspace2020/heng/project/data/output_dir_near_light/04_bunny/orthographic/lambertian/scale_256_256/wo_castshadow/shading/nearPS/2021_08_03_13_41_09_re_train_l1/checkpoints/model_final.pth'
+save_state_path =  '/mnt/workspace2020/heng/project/data/output_dir_near_light/09_reading/perspective/lambertian/scale_256_256/wo_castshadow/shading/nearPS/2021_08_07_14_41_09_ef7f97f8/checkpoints/model_current.pth'
 training.train(model=model, train_dataloader=dataloader, epochs=opt.num_epochs, lr=opt.lr,
                steps_til_summary=opt.steps_til_summary, epochs_til_checkpoint=opt.epochs_til_ckpt,
                model_dir=root_path, loss_fn=loss_fn, summary_fn=summary_fn, use_lbfgs = False, kwargs = kwargs,
