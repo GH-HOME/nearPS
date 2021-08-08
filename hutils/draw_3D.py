@@ -202,6 +202,9 @@ def generate_mesh(pointcloud, mask, img_name, window_size, title):
 
 
 
+
+
+
 if __name__ == "__main__":
 
     # depth = np.load(r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\depth.npy')
