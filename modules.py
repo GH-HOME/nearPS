@@ -8,6 +8,28 @@ import math
 import torch.nn.functional as F
 
 
+class BatchSinResLinear(nn.Linear, MetaModule):
+    '''A linear meta-layer that can deal with batched weight matrices and biases, as for instance output by a
+    hypernetwork.'''
+    __doc__ = nn.Linear.__doc__
+
+    def forward(self, input, params=None):
+        if params is None:
+            params = OrderedDict(self.named_parameters())
+
+        bias = params.get('bias', None)
+        weight = params['weight']
+
+        output_l = input.matmul(weight.permute(*[i for i in range(len(weight.shape) - 2)], -1, -2))
+        output_l += bias.unsqueeze(-2)
+
+        output_s = torch.sin(30 * output_l)
+
+        output = output_s + input
+
+        return output
+
+
 class BatchLinear(nn.Linear, MetaModule):
     '''A linear meta-layer that can deal with batched weight matrices and biases, as for instance output by a
     hypernetwork.'''
@@ -25,6 +47,7 @@ class BatchLinear(nn.Linear, MetaModule):
         return output
 
 
+
 class Sine(nn.Module):
     def __init(self):
         super().__init__()
@@ -32,6 +55,7 @@ class Sine(nn.Module):
     def forward(self, input):
         # See paper sec. 3.2, final paragraph, and supplement Sec. 1.5 for discussion of factor 30
         return torch.sin(30 * input)
+
 
 
 class FCBlock(MetaModule):
@@ -123,6 +147,97 @@ class FCBlock(MetaModule):
         return activations
 
 
+class FCResBlock(MetaModule):
+    '''A fully connected neural network that also allows swapping out the weights when used with a hypernetwork.
+    Can be used just as a normal neural network though, as well.
+    '''
+
+    def __init__(self, in_features, out_features, num_hidden_layers, hidden_features,
+                 outermost_linear=False, nonlinearity='relu', weight_init=None, last_layer_offset=None):
+        super().__init__()
+
+        self.first_layer_init = None
+
+        # Dictionary that maps nonlinearity name to the respective function, initialization, and, if applicable,
+        # special first-layer initialization scheme
+        nls_and_inits = {'sine':(Sine(), sine_init, first_layer_sine_init),
+                         'relu':(nn.ReLU(inplace=True), init_weights_normal, None),
+                         'sigmoid':(nn.Sigmoid(), init_weights_xavier, None),
+                         'tanh':(nn.Tanh(), init_weights_xavier, None),
+                         'selu':(nn.SELU(inplace=True), init_weights_selu, None),
+                         'softplus':(nn.Softplus(), init_weights_normal, None),
+                         'elu':(nn.ELU(inplace=True), init_weights_elu, None)}
+
+        nl, nl_weight_init, first_layer_init = nls_and_inits[nonlinearity]
+
+        if weight_init is not None:  # Overwrite weight init if passed
+            self.weight_init = weight_init
+        else:
+            self.weight_init = nl_weight_init
+
+        self.net = []
+        self.net.append(MetaSequential(
+            BatchLinear(in_features, hidden_features), nl
+        ))
+
+        for i in range(num_hidden_layers):
+            self.net.append(MetaSequential(
+                BatchSinResLinear(hidden_features, hidden_features)
+            ))
+
+        if outermost_linear:
+            self.net.append(MetaSequential(BatchLinear(hidden_features, out_features)))
+        else:
+            self.net.append(MetaSequential(
+                BatchLinear(hidden_features, out_features), nl
+            ))
+
+        self.net = MetaSequential(*self.net)
+
+        if self.weight_init is not None:
+            self.net.apply(self.weight_init)
+
+        if first_layer_init is not None: # Apply special initialization to first layer, if applicable.
+            self.net[0].apply(first_layer_init)
+
+
+        if last_layer_offset is not None: # Apply special initialization to last layer, if applicable.
+            self.net[-1][0].bias.data.fill_(last_layer_offset)
+
+        print(self.net)
+
+    def forward(self, coords, params=None, **kwargs):
+        if params is None:
+            params = OrderedDict(self.named_parameters())
+
+        output = self.net(coords, params=get_subdict(params, 'net'))
+        return output
+
+    def forward_with_activations(self, coords, params=None, retain_grad=False):
+        '''Returns not only model output, but also intermediate activations.'''
+        if params is None:
+            params = OrderedDict(self.named_parameters())
+
+        activations = OrderedDict()
+
+        x = coords.clone().detach().requires_grad_(True)
+        activations['input'] = x
+        for i, layer in enumerate(self.net):
+            subdict = get_subdict(params, 'net.%d' % i)
+            for j, sublayer in enumerate(layer):
+                if isinstance(sublayer, BatchLinear):
+                    x = sublayer(x, params=get_subdict(subdict, '%d' % j))
+                else:
+                    x = sublayer(x)
+
+                if retain_grad:
+                    x.retain_grad()
+                activations['_'.join((str(sublayer.__class__), "%d" % i))] = x
+        return activations
+
+
+
+
 class SingleBVPNet(MetaModule):
     '''A canonical representation network for a BVP.'''
 
@@ -145,7 +260,7 @@ class SingleBVPNet(MetaModule):
                                                     downsample=kwargs.get('downsample', False))
 
         offset = kwargs.get('last_layer_offset',  0.0)
-        self.net = FCBlock(in_features=in_features, out_features=out_features, num_hidden_layers=num_hidden_layers,
+        self.net = FCResBlock(in_features=in_features, out_features=out_features, num_hidden_layers=num_hidden_layers,
                            hidden_features=hidden_features, outermost_linear=True, nonlinearity=type, last_layer_offset = offset)
         print(self)
 
