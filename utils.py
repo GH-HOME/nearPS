@@ -417,8 +417,15 @@ def write_image_summary(image_resolution, model, model_input, gt,
     xx = xx.detach().cpu().numpy().reshape(batch_size, h, w)
     yy = yy.detach().cpu().numpy().reshape(batch_size, h, w)
 
+    if 'cam_para' in gt:
+        focal_len, sensor_height, sensor_width = gt['cam_para'][0].cpu().numpy()
+        zz = depth_est
+        point_cloud = np.dstack([xx[0] * sensor_width / 2 * zz / focal_len,
+                                 yy[0] * sensor_height / 2 * zz / focal_len,
+                                 zz])
+    else:
+        point_cloud = np.dstack([xx[0], yy[0], depth_est])
 
-    point_cloud = np.dstack([xx[0], yy[0], depth_est])
     generate_mesh(point_cloud, mask, shape_file_name, window_size = (1024, 768), title = 'Iter: {:0>5d} \n \nloss: {:.2e}'.format(total_steps, loss_val))
     # generate_mesh(depth_est, mask, shape_file_name, step_size = 2 / h, window_size = (1024, 768), title = 'Iter: {:0>5d} \n \nloss: {:.2e}'.format(total_steps, loss_val))
     # writer.add_image(prefix + 'Depth_est', depth_est, global_step=total_steps)

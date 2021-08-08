@@ -116,6 +116,7 @@ def scatter_3D_default_view(obj_path = None, mesh = None, img_name = None, windo
         (0, 1, 0),
     ]
 
+    print(title)
     cpos_init, img = pv.plot(mesh,
                  cpos=cpos,
                  color="w",

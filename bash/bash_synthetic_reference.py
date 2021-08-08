@@ -9,8 +9,7 @@ shape_set = np.genfromtxt(os.path.join(para_folder, 'shape_list.csv'), delimiter
 scale_set = np.genfromtxt(os.path.join(para_folder, 'scale_list_64_64.csv'), delimiter=',', dtype=np.int)
 base_data_dir = r'F:\Project\SIREN\siren\data\output_dir_near_light'
 
-scale_set = [[512, 512]]
-commit_id = '8c3bb149'
+commit_id = 'ff6dc47a'
 for resolution in scale_set:
     for shape_name in shape_set:
         filename_str = 'perspective/lambertian/scale_{rx}_{ry}/wo_castshadow/shading/'.format(
