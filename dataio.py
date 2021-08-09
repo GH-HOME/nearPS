@@ -755,7 +755,7 @@ class Shading_LEDNPY(Dataset):
             self.albedo = np.load(custom_albedo)
         else:
             h, w = self.mask.shape
-            self.albedo = np.zeros([h, w, 3])
+            self.albedo = np.ones([h, w, 3])
 
         if len(self.albedo.shape) == 3 and not use_color_channel:
             self.albedo = np.mean(self.albedo, axis=2, keepdims=True)

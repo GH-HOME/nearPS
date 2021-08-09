@@ -346,9 +346,13 @@ def write_image_summary(image_resolution, model, model_input, gt,
     depth_gt = kwargs['depth_gt']
     vmaxN, vmaxD, vmaxA = kwargs['vmaxNDA']
     mask = kwargs['mask']
-    albedo_gt = kwargs['albedo_gt']
-    LEDs_loc = kwargs['LED_loc']
-    imgs_data = kwargs['imgs']
+
+    if 'albedo_gt' in kwargs:
+        albedo_gt = kwargs['albedo_gt']
+        LEDs_loc = kwargs['LED_loc']
+        imgs_data = kwargs['imgs']
+    else:
+        albedo_gt = None
 
     createDir(save_folder)
 
@@ -426,43 +430,45 @@ def write_image_summary(image_resolution, model, model_input, gt,
     np.save(os.path.join(save_folder, 'iter_{:0>5d}_depth_est_w.npy'.format(total_steps)), depth_est)
 
 
-    # now eval the albedo
-    numPixel = np.sum(mask)
-    numLEDs = len(LEDs_loc)
-    numChannel = imgs_data.shape[-1]
-    shading_set = np.zeros([numPixel, numLEDs])
-    point_cloud_flat = point_cloud[mask]
-    normal_flat = normal_dir[mask]
-    for i in range(numLEDs):
-        LED_loc = LEDs_loc[i][np.newaxis, :]
-        lights = LED_loc - point_cloud_flat
-        L_norm = np.linalg.norm(lights, axis=1, keepdims=True)
-        light_dir = lights / L_norm
-        light_falloff = np.power(L_norm, -2)
-
-        shading = np.sum(light_dir * normal_flat, axis=1, keepdims=True)
-
-        img = light_falloff * shading
-        shading_set[:, i] = np.maximum(img.squeeze(), 0.0)
-
-
-    shading_sum = (shading_set * shading_set).sum(axis = 1)
-    albedo_flat = (imgs_data[:, mask].transpose([1, 2, 0]) * shading_set[:, np.newaxis]).sum(axis=2) / shading_sum[:, np.newaxis]
-
-    if numChannel != 1:
-        albedo_est = np.zeros([h, w, 3]).astype(np.float)
-        albedo_est[mask] = albedo_flat
-    else:
-        albedo_est = np.zeros([h, w]).astype(np.float)
-        albedo_est[mask] = albedo_flat.squeeze()
-
-
-    np.save(os.path.join(save_folder, 'iter_{:0>5d}_albedo_est.npy'.format(total_steps)), albedo_est)
-    plt.imshow(albedo_est/albedo_est.max())
-    save_plt_fig_with_title(os.path.join(save_folder, 'iter_{:0>5d}_albedo_est.png'.format(total_steps)), 'Iter: {:0>5d} \n loss: {:.2e}'.format(total_steps, loss_val))
-    plt.close('all')
 
     if albedo_gt is not None:
+        # now eval the albedo
+        numPixel = np.sum(mask)
+        numLEDs = len(LEDs_loc)
+        numChannel = imgs_data.shape[-1]
+        shading_set = np.zeros([numPixel, numLEDs])
+        point_cloud_flat = point_cloud[mask]
+        normal_flat = normal_dir[mask]
+        for i in range(numLEDs):
+            LED_loc = LEDs_loc[i][np.newaxis, :]
+            lights = LED_loc - point_cloud_flat
+            L_norm = np.linalg.norm(lights, axis=1, keepdims=True)
+            light_dir = lights / L_norm
+            light_falloff = np.power(L_norm, -2)
+
+            shading = np.sum(light_dir * normal_flat, axis=1, keepdims=True)
+
+            img = light_falloff * shading
+            shading_set[:, i] = np.maximum(img.squeeze(), 0.0)
+
+        shading_sum = (shading_set * shading_set).sum(axis=1)
+        albedo_flat = (imgs_data[:, mask].transpose([1, 2, 0]) * shading_set[:, np.newaxis]).sum(axis=2) / shading_sum[
+                                                                                                           :,
+                                                                                                           np.newaxis]
+
+        if numChannel != 1:
+            albedo_est = np.zeros([h, w, 3]).astype(np.float)
+            albedo_est[mask] = albedo_flat
+        else:
+            albedo_est = np.zeros([h, w]).astype(np.float)
+            albedo_est[mask] = albedo_flat.squeeze()
+
+        np.save(os.path.join(save_folder, 'iter_{:0>5d}_albedo_est.npy'.format(total_steps)), albedo_est)
+        plt.imshow(albedo_est / albedo_est.max())
+        save_plt_fig_with_title(os.path.join(save_folder, 'iter_{:0>5d}_albedo_est.png'.format(total_steps)),
+                                'Iter: {:0>5d} \n loss: {:.2e}'.format(total_steps, loss_val))
+        plt.close('all')
+
         error_map, mabse, _ = evaldepth(albedo_est, albedo_gt, mask = mask)
         img_path = os.path.join(save_folder, 'iter_{:0>5d}_albedo_abs_err_{:.2e}.png'.format(total_steps, mabse))
         plt_error_map(error_map, mask, vmax=vmaxA, withbar=True,

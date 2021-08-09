@@ -71,7 +71,7 @@ custom_image = os.path.join(opt.data_folder, 'render_img/imgs_blender.npy')
 custom_LEDs = os.path.join(opt.data_folder, 'render_para/LED_locs.npy')
 custom_depth = os.path.join(opt.data_folder, 'render_para/depth.npy')
 custom_normal = os.path.join(opt.data_folder, 'render_para/normal_world.npy')
-custom_albedo = os.path.join(opt.data_folder, 'render_para/albedo.npy')
+
 custom_camera_para = os.path.join(opt.data_folder, 'save.ini')
 camera_para_config = configparser.ConfigParser()
 camera_para_config.optionxform = str
@@ -79,6 +79,9 @@ camera_para_config.read(custom_camera_para)
 camera_para = np.array([float(camera_para_config['camera']['focal_length']),
                         float(camera_para_config['camera']['sensor_height']),
                         float(camera_para_config['camera']['sensor_width'])]) / 1000  # mm --> m
+
+custom_albedo = None
+# custom_albedo = os.path.join(opt.data_folder, 'render_para/albedo.npy')
 
 
 
@@ -161,10 +164,12 @@ kwargs = {'save_folder': os.path.join(root_path, 'test'),
           'N_gt': np.load(custom_normal),
           'depth_gt': np.load(custom_depth),
           'vmaxNDA': [10, 0.1, 0.1],
-          'mask': np.load(custom_mask),
-          'albedo_gt':np.load(custom_albedo),
-          'LED_loc': np.load(custom_LEDs),
-          'imgs': np.load(custom_image)}
+          'mask': np.load(custom_mask)}
+
+if custom_albedo is not None:
+    kwargs['albedo_gt'] = np.load(custom_albedo)
+    kwargs['imgs'] = np.load(custom_image)
+    kwargs['LED_loc'] = np.load(custom_LEDs)
 
 
 save_state_path = None# save_state_path = '/mnt/workspace2020/heng/project/data/output_dir_near_light/04_bunny/orthographic/lambertian/scale_256_256/wo_castshadow/shading/nearPS/2021_08_03_23_24_24_re_train_l1/checkpoints/model_epoch_35000.pth'
