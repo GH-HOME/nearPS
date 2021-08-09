@@ -49,6 +49,7 @@ p.add_argument('--color_channel', type=bool, default=True, help='whether to use 
 p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained model.')
 p.add_argument('--data_folder', type=str, default='./data/output_dir_near_light/09_reading/perspective/lambertian/scale_256_256/wo_castshadow/shading', help='Path to data')
 p.add_argument('--custom_depth_offset', type=float, default=3.0, help='initial depth from the LED position')
+p.add_argument('--sv_albedo', type=bool, default=True, help='whether to use SV albedo')
 p.add_argument('--gpu_id', type=int, default=1, help='GPU ID')
 p.add_argument('--env', type=str, default='win32', help='system environment')
 
@@ -80,8 +81,11 @@ camera_para = np.array([float(camera_para_config['camera']['focal_length']),
                         float(camera_para_config['camera']['sensor_height']),
                         float(camera_para_config['camera']['sensor_width'])]) / 1000  # mm --> m
 
-custom_albedo = None
-# custom_albedo = os.path.join(opt.data_folder, 'render_para/albedo.npy')
+if opt.sv_albedo:
+    custom_albedo = os.path.join(opt.data_folder, 'render_para/albedo.npy')
+else:
+    custom_albedo = None
+
 
 
 
