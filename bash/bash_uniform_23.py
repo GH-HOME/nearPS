@@ -9,7 +9,7 @@ scale_set = np.genfromtxt(os.path.join(para_folder, 'scale_list_64_64.csv'), del
 base_data_dir = '/mnt/workspace2020/heng/project/data/output_dir_near_light'
 gpu_id = 1
 
-scale_set = [[256, 256]]
+scale_set = [[512, 512]]
 commit_id = 'ef7f97f8'
 for resolution in scale_set:
     for shape_name in shape_set[6:9]:

@@ -36,13 +36,16 @@ p.add_argument('--steps_til_summary', type=int, default=500,
 
 p.add_argument('--dataset', type=str, default='custom',
                help='Time interval in seconds until tensorboard summary is saved.')
+p.add_argument('--net_type', type=str, default='FCRes',
+               help='The network structure, FC or FCRes ')
+
 p.add_argument('--model_type', type=str, default='sine',
                help='Options currently are "sine" (all sine activations), "relu" (all relu activations,'
                     '"nerf" (relu activations and positional encoding as in NeRF), "rbf" (input rbf layer, rest relu),'
                     'and in the future: "mixed" (first layer sine, other layers tanh)')
 
 p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained model.')
-p.add_argument('--data_folder', type=str, default='./data/output_dir_near_light/09_reading/perspective/lambertian/scale_256_256/wo_castshadow/shading', help='Path to data')
+p.add_argument('--data_folder', type=str, default='./data/output_dir_near_light/Sphere/perspective/lambertian/scale_128_128/wo_castshadow/shading', help='Path to data')
 p.add_argument('--custom_depth_offset', type=float, default=3.0, help='initial depth from the LED position')
 p.add_argument('--gpu_id', type=int, default=1, help='GPU ID')
 p.add_argument('--env', type=str, default='win32', help='system environment')
@@ -99,7 +102,9 @@ dataloader = DataLoader(coord_dataset, shuffle=True, batch_size=opt.batch_size, 
 
 # Define the model.
 if opt.model_type == 'sine' or opt.model_type == 'relu' or opt.model_type == 'tanh':
-    model = modules.SingleBVPNet(type=opt.model_type, mode='mlp', out_features=1, sidelength=image_resolution, num_hidden_layers = 5,
+    model = modules.SingleBVPNet(type=opt.model_type, mode='mlp', out_features=1,
+                                 sidelength=image_resolution, num_hidden_layers = 5,
+                                 net_type = opt.net_type,
                                  downsample=opt.downsample, last_layer_offset = offset)
 
     # model = modules.Siren(in_features=2, out_features=1, hidden_features=256,
@@ -148,7 +153,7 @@ kwargs = {'save_folder': os.path.join(root_path, 'test'),
           'mask': np.load(custom_mask)}
 
 
-save_state_path =  None#'/mnt/workspace2020/heng/project/data/output_dir_near_light/09_reading/perspective/lambertian/scale_256_256/wo_castshadow/shading/nearPS/2021_08_07_14_41_09_ef7f97f8/checkpoints/model_current.pth'
+save_state_path = None
 training.train(model=model, train_dataloader=dataloader, epochs=opt.num_epochs, lr=opt.lr,
                steps_til_summary=opt.steps_til_summary, epochs_til_checkpoint=opt.epochs_til_ckpt,
                model_dir=root_path, loss_fn=loss_fn, summary_fn=summary_fn, use_lbfgs = False, kwargs = kwargs,

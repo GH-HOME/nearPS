@@ -42,7 +42,6 @@ def train(model, train_dataloader, epochs, lr, steps_til_summary, epochs_til_che
 
     writer = SummaryWriter(summaries_dir)
 
-    net_params = OrderedDict(model.named_parameters())
 
     total_steps = 0
     with tqdm(total=len(train_dataloader) * epochs) as pbar:

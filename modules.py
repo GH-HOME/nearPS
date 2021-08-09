@@ -260,8 +260,18 @@ class SingleBVPNet(MetaModule):
                                                     downsample=kwargs.get('downsample', False))
 
         offset = kwargs.get('last_layer_offset',  0.0)
-        self.net = FCResBlock(in_features=in_features, out_features=out_features, num_hidden_layers=num_hidden_layers,
-                           hidden_features=hidden_features, outermost_linear=True, nonlinearity=type, last_layer_offset = offset)
+        network_type = kwargs.get('net_type',  'FC')
+        if network_type == 'FC':
+            self.net = FCBlock(in_features=in_features, out_features=out_features,
+                                  num_hidden_layers=num_hidden_layers,
+                                  hidden_features=hidden_features, outermost_linear=True, nonlinearity=type,
+                                  last_layer_offset=offset)
+        elif network_type == 'FCRes':
+            self.net = FCResBlock(in_features=in_features, out_features=out_features,
+                                  num_hidden_layers=num_hidden_layers,
+                                  hidden_features=hidden_features, outermost_linear=True, nonlinearity=type,
+                                  last_layer_offset=offset)
+
         print(self)
 
     def forward(self, model_input, params=None):
