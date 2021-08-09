@@ -43,12 +43,16 @@ p.add_argument('--model_type', type=str, default='sine',
                help='Options currently are "sine" (all sine activations), "relu" (all relu activations,'
                     '"nerf" (relu activations and positional encoding as in NeRF), "rbf" (input rbf layer, rest relu),'
                     'and in the future: "mixed" (first layer sine, other layers tanh)')
+p.add_argument('--color_channel', type=bool, default=True, help='whether to use color channels')
+
 
 p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained model.')
 p.add_argument('--data_folder', type=str, default='./data/output_dir_near_light/09_reading/perspective/lambertian/scale_256_256/wo_castshadow/shading', help='Path to data')
 p.add_argument('--custom_depth_offset', type=float, default=3.0, help='initial depth from the LED position')
 p.add_argument('--gpu_id', type=int, default=1, help='GPU ID')
 p.add_argument('--env', type=str, default='win32', help='system environment')
+
+
 opt = p.parse_args()
 
 if opt.env == 'linux':
@@ -88,12 +92,17 @@ if opt.dataset == 'camera_downsampled':
     image_resolution = (256, 256)
 if opt.dataset == 'custom':
     img_dataset = dataio.Shading_LEDNPY(custom_image, custom_LEDs, custom_mask, custom_normal,
-                                        custom_depth, camera_para, custom_albedo)
+                                        custom_depth, camera_para, custom_albedo, opt.color_channel)
     # img_dataset = dataio.SurfaceTent(128)
     if len(img_dataset[0]['img'].shape) == 3:
         numImg, h, w = img_dataset[0]['img'].shape
-    else:
+    elif len(img_dataset[0]['img'].shape) == 4:
+        numImg, h, w, numChannel = img_dataset[0]['img'].shape
+    elif len(img_dataset[0]['img'].shape) == 2:
         h, w = img_dataset[0]['img'].shape
+    else:
+        raise Exception('Image channel is not fit.')
+
     image_resolution = (h, w)
     coord_dataset = dataio.Implicit2DWrapper(img_dataset, image_resolution, compute_diff='gradients')
     offset = opt.custom_depth_offset
@@ -151,8 +160,11 @@ summary_fn = partial(utils.write_image_summary, image_resolution)
 kwargs = {'save_folder': os.path.join(root_path, 'test'),
           'N_gt': np.load(custom_normal),
           'depth_gt': np.load(custom_depth),
-          'vmaxND': [10, 1],
-          'mask': np.load(custom_mask)}
+          'vmaxNDA': [10, 0.1, 0.1],
+          'mask': np.load(custom_mask),
+          'albedo_gt':np.load(custom_albedo),
+          'LED_loc': np.load(custom_LEDs),
+          'imgs': np.load(custom_image)}
 
 
 save_state_path = None# save_state_path = '/mnt/workspace2020/heng/project/data/output_dir_near_light/04_bunny/orthographic/lambertian/scale_256_256/wo_castshadow/shading/nearPS/2021_08_03_23_24_24_re_train_l1/checkpoints/model_epoch_35000.pth'

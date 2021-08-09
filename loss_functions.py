@@ -567,6 +567,7 @@ def render_NL_img_mse_sv_albedo_lstsq_l1(mask, model_output, gt, total_steps, de
     batch_size, numLEDs, _ = gt['LED_loc'].shape
     batch_size, numPixel, numChannel = zz.shape
     shading_set = torch.zeros([batch_size, numPixel, numChannel, numLEDs], dtype=torch.float64)
+
     shading_set = shading_set.to(device)
     attach_shadow = torch.nn.ReLU()
     for i in range(numLEDs):
@@ -589,12 +590,12 @@ def render_NL_img_mse_sv_albedo_lstsq_l1(mask, model_output, gt, total_steps, de
 
     shading_sum = (shading_set * shading_set).sum(dim = 3)
     shading_sum = torch.where(shading_sum < 1e-8, torch.ones_like(shading_sum) * 1e-8, shading_sum)
-    albedo = (gt['img'].unsqueeze(2) * attach_shadow(shading_set)).sum(dim = 3) / shading_sum
+    albedo = (gt['img'] * attach_shadow(shading_set)).sum(dim = 3) / shading_sum
 
 
     # L1 loss
-    residue = torch.abs(gt['img'].unsqueeze(2) - attach_shadow(shading_set) * albedo.unsqueeze(3))
-    img_loss_all = (mask * residue.mean(dim = 3)).mean()
+    residue = torch.abs(gt['img'] - attach_shadow(shading_set) * albedo.unsqueeze(3))
+    img_loss_all = (mask.unsqueeze(0) * residue.mean(dim = 3)).mean()
 
     # for debug
     # normal_loss = 1 - F.cosine_similarity(normal_dir, gt['normal_gt'], dim=-1)[..., None]

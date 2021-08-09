@@ -734,7 +734,8 @@ class AudioFile(Dataset):
 
 
 class Shading_LEDNPY(Dataset):
-    def __init__(self, img_paths, LED_path, mask_path, normal_path, depth_path, camera_para = None, custom_albedo = None):
+    def __init__(self, img_paths, LED_path, mask_path, normal_path, depth_path,
+                 camera_para = None, custom_albedo = None, use_color_channel = False):
         super().__init__()
 
         self.LED_set = np.load(LED_path)
@@ -747,14 +748,20 @@ class Shading_LEDNPY(Dataset):
         self.camera_para = camera_para
         self.albedo = None
 
-        if len(self.imgs.shape) == 4: # RGB
-            self.imgs = np.mean(self.imgs, axis=3)
+        if len(self.imgs.shape) == 4 and not use_color_channel: # RGB
+            self.imgs = np.mean(self.imgs, axis=3, keepdims=True)
 
         if custom_albedo is not None:
             self.albedo = np.load(custom_albedo)
-            if len(self.albedo.shape) == 3:
-                self.albedo = np.mean(self.albedo, axis=2)
-            self.imgs = self.imgs * self.albedo[np.newaxis, :, :]
+        else:
+            h, w = self.mask.shape
+            self.albedo = np.zeros([h, w, 3])
+
+        if len(self.albedo.shape) == 3 and not use_color_channel:
+            self.albedo = np.mean(self.albedo, axis=2, keepdims=True)
+        self.imgs = self.imgs * self.albedo[np.newaxis]
+
+        self.color_channel = self.imgs.shape[-1]
 
 
     def __len__(self):
@@ -794,7 +801,7 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         img, LED_loc = data['img'], data['LED_loc']
         img = torch.from_numpy(img)
         LED_loc = torch.from_numpy(LED_loc)
-        img = img.permute(1, 2, 0).view(-1, self.dataset.img_channels)
+        img = img.permute(1, 2, 3, 0).view(-1,  self.dataset.color_channel, self.dataset.img_channels)
 
 
         depth_gt, normal_gt = data['depth_gt'], data['normal_gt']
@@ -814,14 +821,6 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
 
         return in_dict, gt_dict
 
-    def get_item_small(self, idx):
-        img = self.transform(self.dataset[idx])
-        spatial_img = img.clone()
-        img = img.permute(1, 2, 0).view(-1, self.dataset.img_channels)
-
-        gt_dict = {'img': img}
-
-        return spatial_img, img, gt_dict
 
 
 class Implicit3DWrapper(torch.utils.data.Dataset):

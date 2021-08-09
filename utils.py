@@ -344,8 +344,11 @@ def write_image_summary(image_resolution, model, model_input, gt,
     save_folder = kwargs['save_folder']
     N_gt = kwargs['N_gt']
     depth_gt = kwargs['depth_gt']
-    vmaxN, vmaxD = kwargs['vmaxND']
+    vmaxN, vmaxD, vmaxA = kwargs['vmaxNDA']
     mask = kwargs['mask']
+    albedo_gt = kwargs['albedo_gt']
+    LEDs_loc = kwargs['LED_loc']
+    imgs_data = kwargs['imgs']
 
     createDir(save_folder)
 
@@ -385,18 +388,13 @@ def write_image_summary(image_resolution, model, model_input, gt,
         img_path = os.path.join(save_folder, 'iter_{:0>5d}_ang_err_{:.2f}.png'.format(total_steps, mae))
         plt_error_map(error_map, mask, vmax = vmaxN, withbar=True,
                       title = 'Iter: {:0>5d} MAE: {:.2f}'.format(total_steps, mae), img_path = img_path)
-        # err_img = plt_error_map_cv2(error_map, mask, vmin=0, vmax=vmaxN)
-        # cv2.imwrite(img_path, err_img)
         print('iter_{:0>5d}_ang_err_{:.2f}'.format(total_steps, mae))
-        # writer.add_image(prefix + 'ang_err_vmax_{}'.format(vmaxN), err_img, global_step=total_steps)
 
-    # save_normal_no_margin(normal_dir, mask, os.path.join(save_folder, 'iter_{}_N_est.png'.format(total_steps)))
     normal_show = normal_dir.copy()
     normal_show[:, :, 0] *= (-1)
     normal_show[:, :, 2] *= (-1)
     plt.imshow(N_2_N_show(normal_show, mask))
     save_plt_fig_with_title(os.path.join(save_folder, 'iter_{:0>5d}_N_est.png'.format(total_steps)), 'Iter: {:0>5d} \n loss: {:.2e}'.format(total_steps, loss_val))
-    # writer.add_image(prefix + 'Normal_est', N_2_N_show(normal_dir), global_step=total_steps)
     np.save(os.path.join(save_folder, 'iter_{:0>5d}_N_est_w.npy'.format(total_steps)), normal_dir)
 
 
@@ -406,9 +404,7 @@ def write_image_summary(image_resolution, model, model_input, gt,
         img_path = os.path.join(save_folder, 'iter_{:0>5d}_abs_err_{:.2e}.png'.format(total_steps, mabse))
         plt_error_map(error_map, mask, vmax=vmaxD, withbar=True,
                       title='Iter: {:0>5d} MAbsE: {:.2e}'.format(total_steps, mabse), img_path=img_path)
-        # err_img = plt_error_map_cv2(error_map, mask, vmin=0, vmax=vmaxD)
         print('iter_{:0>5d}_abs_err_{:.2e}'.format(total_steps, mabse))
-        # writer.add_image(prefix + 'ang_err_vmax_{}'.format(vmaxD), err_img, global_step=total_steps)
 
     shape_file_name = os.path.join(save_folder, 'iter_{:0>5d}_Z_est.png'.format(total_steps))
     from hutils.draw_3D import generate_mesh
@@ -427,9 +423,55 @@ def write_image_summary(image_resolution, model, model_input, gt,
         point_cloud = np.dstack([xx[0], yy[0], depth_est])
 
     generate_mesh(point_cloud, mask, shape_file_name, window_size = (1024, 768), title = 'Iter: {:0>5d} \n \nloss: {:.2e}'.format(total_steps, loss_val))
-    # generate_mesh(depth_est, mask, shape_file_name, step_size = 2 / h, window_size = (1024, 768), title = 'Iter: {:0>5d} \n \nloss: {:.2e}'.format(total_steps, loss_val))
-    # writer.add_image(prefix + 'Depth_est', depth_est, global_step=total_steps)
     np.save(os.path.join(save_folder, 'iter_{:0>5d}_depth_est_w.npy'.format(total_steps)), depth_est)
+
+
+    # now eval the albedo
+    numPixel = np.sum(mask)
+    numLEDs = len(LEDs_loc)
+    numChannel = imgs_data.shape[-1]
+    shading_set = np.zeros([numPixel, numLEDs])
+    point_cloud_flat = point_cloud[mask]
+    normal_flat = normal_dir[mask]
+    for i in range(numLEDs):
+        LED_loc = LEDs_loc[i][np.newaxis, :]
+        lights = LED_loc - point_cloud_flat
+        L_norm = np.linalg.norm(lights, axis=1, keepdims=True)
+        light_dir = lights / L_norm
+        light_falloff = np.power(L_norm, -2)
+
+        shading = np.sum(light_dir * normal_flat, axis=1, keepdims=True)
+
+        img = light_falloff * shading
+        shading_set[:, i] = np.maximum(img.squeeze(), 0.0)
+
+
+    shading_sum = (shading_set * shading_set).sum(axis = 1)
+    albedo_flat = (imgs_data[:, mask].transpose([1, 2, 0]) * shading_set[:, np.newaxis]).sum(axis=2) / shading_sum[:, np.newaxis]
+
+    if numChannel != 1:
+        albedo_est = np.zeros([h, w, 3]).astype(np.float)
+        albedo_est[mask] = albedo_flat
+    else:
+        albedo_est = np.zeros([h, w]).astype(np.float)
+        albedo_est[mask] = albedo_flat.squeeze()
+
+
+    np.save(os.path.join(save_folder, 'iter_{:0>5d}_albedo_est.npy'.format(total_steps)), albedo_est)
+    plt.imshow(albedo_est/albedo_est.max())
+    save_plt_fig_with_title(os.path.join(save_folder, 'iter_{:0>5d}_albedo_est.png'.format(total_steps)), 'Iter: {:0>5d} \n loss: {:.2e}'.format(total_steps, loss_val))
+    plt.close('all')
+
+    if albedo_gt is not None:
+        error_map, mabse, _ = evaldepth(albedo_est, albedo_gt, mask = mask)
+        img_path = os.path.join(save_folder, 'iter_{:0>5d}_albedo_abs_err_{:.2e}.png'.format(total_steps, mabse))
+        plt_error_map(error_map, mask, vmax=vmaxA, withbar=True,
+                      title='Iter: {:0>5d} MAbsE: {:.2e}'.format(total_steps, mabse), img_path=img_path)
+
+
+
+
+
 
 
 def write_image_SV_albedo_summary(image_resolution, model, model_input, gt,
@@ -441,7 +483,7 @@ def write_image_SV_albedo_summary(image_resolution, model, model_input, gt,
     from hutils.fileio import createDir
     from hutils.PhotometricStereoUtil import evalsurfaceNormal, evaldepth
     from hutils.visualization import plt_error_map_cv2, save_normal_no_margin, N_2_N_show, plt_error_map, \
-        save_plt_fig_with_title
+        save_plt_fig_with_title, save_transparent_img
 
     save_folder = kwargs['save_folder']
     N_gt = kwargs['N_gt']
