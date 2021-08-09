@@ -67,6 +67,7 @@ custom_image = os.path.join(opt.data_folder, 'render_img/imgs_blender.npy')
 custom_LEDs = os.path.join(opt.data_folder, 'render_para/LED_locs.npy')
 custom_depth = os.path.join(opt.data_folder, 'render_para/depth.npy')
 custom_normal = os.path.join(opt.data_folder, 'render_para/normal_world.npy')
+custom_albedo = os.path.join(opt.data_folder, 'render_para/albedo.npy')
 custom_camera_para = os.path.join(opt.data_folder, 'save.ini')
 camera_para_config = configparser.ConfigParser()
 camera_para_config.optionxform = str
@@ -86,7 +87,8 @@ if opt.dataset == 'camera_downsampled':
     coord_dataset = dataio.Implicit2DWrapper(img_dataset, sidelength=256, compute_diff='all')
     image_resolution = (256, 256)
 if opt.dataset == 'custom':
-    img_dataset = dataio.Shading_LEDNPY(custom_image, custom_LEDs, custom_mask, custom_normal, custom_depth, camera_para)
+    img_dataset = dataio.Shading_LEDNPY(custom_image, custom_LEDs, custom_mask, custom_normal,
+                                        custom_depth, camera_para, custom_albedo)
     # img_dataset = dataio.SurfaceTent(128)
     if len(img_dataset[0]['img'].shape) == 3:
         numImg, h, w = img_dataset[0]['img'].shape

@@ -734,7 +734,7 @@ class AudioFile(Dataset):
 
 
 class Shading_LEDNPY(Dataset):
-    def __init__(self, img_paths, LED_path, mask_path, normal_path, depth_path, camera_para = None):
+    def __init__(self, img_paths, LED_path, mask_path, normal_path, depth_path, camera_para = None, custom_albedo = None):
         super().__init__()
 
         self.LED_set = np.load(LED_path)
@@ -745,15 +745,24 @@ class Shading_LEDNPY(Dataset):
         self.normal = np.load(normal_path)
         self.mask = np.load(mask_path)
         self.camera_para = camera_para
+        self.albedo = None
 
         if len(self.imgs.shape) == 4: # RGB
             self.imgs = np.mean(self.imgs, axis=3)
+
+        if custom_albedo is not None:
+            self.albedo = np.load(custom_albedo)
+            if len(self.albedo.shape) == 3:
+                self.albedo = np.mean(self.albedo, axis=2)
+            self.imgs = self.imgs * self.albedo[np.newaxis, :, :]
+
 
     def __len__(self):
         return 1
 
     def __getitem__(self, idx):
-        return {'img': self.imgs, 'LED_loc': self.LED_set, 'cam_para': self.camera_para,  'depth_gt':self.depth, 'normal_gt':self.normal}
+        return {'img': self.imgs, 'LED_loc': self.LED_set, 'cam_para': self.camera_para,
+                'depth_gt':self.depth, 'normal_gt':self.normal, 'albedo_gt': self.albedo}
 
 
 class Implicit2DWrapper(torch.utils.data.Dataset):
