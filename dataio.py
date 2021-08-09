@@ -783,8 +783,8 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         # img = self.transform(self.dataset[idx])
         data = self.dataset[idx]
         img, LED_loc = data['img'], data['LED_loc']
-        img = torch.tensor(img)
-        LED_loc = torch.tensor(LED_loc)
+        img = torch.from_numpy(img)
+        LED_loc = torch.from_numpy(LED_loc)
         img = img.permute(1, 2, 0).view(-1, self.dataset.img_channels)
 
 
@@ -799,7 +799,7 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         # gt_dict = {'img': img}
         # gt_dict = {'img': img, 'LED_loc': LED_loc}
         if data['cam_para'] is not None:
-            gt_dict = {'img': img, 'LED_loc': LED_loc, 'cam_para': torch.tensor(data['cam_para']), 'depth_gt': depth_gt, 'normal_gt': normal_gt}
+            gt_dict = {'img': img, 'LED_loc': LED_loc, 'cam_para': torch.from_numpy(data['cam_para']), 'depth_gt': depth_gt, 'normal_gt': normal_gt}
         else:
             gt_dict = {'img': img, 'LED_loc': LED_loc, 'depth_gt': depth_gt, 'normal_gt': normal_gt}
 

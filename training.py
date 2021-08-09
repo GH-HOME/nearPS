@@ -23,6 +23,12 @@ def train(model, train_dataloader, epochs, lr, steps_til_summary, epochs_til_che
         optim = torch.optim.LBFGS(lr=lr, params=model.parameters(), max_iter=50000, max_eval=50000,
                                   history_size=50, line_search_fn='strong_wolfe')
 
+    numOfStage = 5
+    milestones = np.linspace(0, epochs, numOfStage + 2)[1:-1].astype(np.int)
+    milestones = milestones.tolist()
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(optim, milestones=milestones, gamma=0.5)
+    # scheduler = torch.optim.lr_scheduler.OneCycleLR(optim, max_lr=lr, steps_per_epoch=2000, epochs=int(epochs/2000))
+
     if save_state_path is not None:
         utils.loadCheckpoint(save_state_path, model)
 
@@ -110,6 +116,7 @@ def train(model, train_dataloader, epochs, lr, steps_til_summary, epochs_til_che
                             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=clip_grad)
 
                     optim.step()
+                    scheduler.step()
 
                 pbar.update(1)
 
