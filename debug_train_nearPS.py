@@ -156,7 +156,7 @@ else:
 
 # Define the loss
 if opt.prior is None:
-    loss_fn = partial(loss_functions.render_NL_img_mse_sv_albedo_lstsq_l1_finite_diff, mask.view(-1,1),
+    loss_fn = partial(loss_functions.render_NL_img_mse_sv_albedo_lstsq_l2_finite_diff, mask.view(-1,1),
                       device = device, resolution = np.array([image_resolution[0], image_resolution[1]]))
 elif opt.prior == 'TV':
     loss_fn = partial(loss_functions.image_mse_TV_prior, mask.view(-1,1), opt.k1, model)
