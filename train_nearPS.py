@@ -83,6 +83,7 @@ camera_para = np.array([float(camera_para_config['camera']['focal_length']),
 
 if opt.sv_albedo:
     custom_albedo = os.path.join(opt.data_folder, 'render_para/albedo.npy')
+    custom_image_sv_albedo = os.path.join(opt.data_folder, 'render_img/img_sv_albedo.npy')
 else:
     custom_albedo = None
 
@@ -172,7 +173,7 @@ kwargs = {'save_folder': os.path.join(root_path, 'test'),
 
 if custom_albedo is not None:
     kwargs['albedo_gt'] = np.load(custom_albedo)
-    kwargs['imgs'] = np.load(custom_image)
+    kwargs['imgs'] = np.load(custom_image_sv_albedo)
     kwargs['LED_loc'] = np.load(custom_LEDs)
 
 
