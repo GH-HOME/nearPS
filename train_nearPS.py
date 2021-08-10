@@ -31,7 +31,7 @@ p.add_argument('--downsample', action='store_true', default=False, help='use ima
 
 p.add_argument('--epochs_til_ckpt', type=int, default=1000,
                help='Time interval in seconds until checkpoint is saved.')
-p.add_argument('--steps_til_summary', type=int, default=500,
+p.add_argument('--steps_til_summary', type=int, default=1000,
                help='Time interval in seconds until tensorboard summary is saved.')
 
 p.add_argument('--dataset', type=str, default='custom',
@@ -51,7 +51,7 @@ p.add_argument('--data_folder', type=str, default='./data/output_dir_near_light/
 p.add_argument('--custom_depth_offset', type=float, default=3.0, help='initial depth from the LED position')
 p.add_argument('--sv_albedo', type=bool, default=True, help='whether to use SV albedo')
 p.add_argument('--gpu_id', type=int, default=1, help='GPU ID')
-p.add_argument('--env', type=str, default='win32', help='system environment')
+p.add_argument('--env', type=str, default='linux', help='system environment')
 
 
 opt = p.parse_args()

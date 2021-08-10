@@ -43,6 +43,7 @@ def gradient(y, x, grad_outputs=None):
     return grad
 
 
+
 def jacobian(y, x):
     ''' jacobian of y wrt x '''
     meta_batch_size, num_observations = y.shape[:2]

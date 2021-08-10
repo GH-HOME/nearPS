@@ -9,7 +9,7 @@ scale_set = np.genfromtxt(os.path.join(para_folder, 'scale_list_64_64.csv'), del
 base_data_dir = '/mnt/workspace2020/heng/project/data/output_dir_near_light'
 gpu_id =  7
 
-commit_id = '2b5087b5'
+commit_id = '158bb260'
 scale_set = [[256, 256]]
 use_SV_albedo = True
 for resolution in scale_set:

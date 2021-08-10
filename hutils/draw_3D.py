@@ -202,16 +202,107 @@ def generate_mesh(pointcloud, mask, img_name, window_size, title):
 
 
 
+def compare_two_mesh(mesh_path1, mesh_path2):
+
+    ambient_value = 0.3
+    diffuse_value = 0.5
+    specular_value = 0.3
+    p = pv.Plotter(border=False)
+
+    mesh_gt = pv.read(mesh_path1)
+    mesh_est = pv.read(mesh_path2)
+
+    cpos_init = p.add_mesh(mesh_gt,
+                           color="w",
+                           smooth_shading=True,
+                           # screenshot=True,
+                           # off_screen=True,
+                           diffuse=diffuse_value,
+                           ambient=ambient_value,
+                           specular=specular_value,
+                           show_scalar_bar=False,
+                           opacity=0.75
+                           )
+
+    cpos_init = p.add_mesh(mesh_est,
+                           color="cyan",
+                           smooth_shading=True,
+                           # screenshot=True,
+                           # off_screen=True,
+                           diffuse=diffuse_value,
+                           ambient=ambient_value,
+                           specular=specular_value,
+                           show_scalar_bar=False,
+                           opacity=1
+                           )
 
 
+    # p.camera_position = cpos
+    p.show()
 
 if __name__ == "__main__":
+    cpos = [
+        (0, 0, -2),
+        (0, 0, 2),
+        (0, 1, 0),
+    ]
 
-    # depth = np.load(r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\depth.npy')
-    # mask = np.load(r'F:\Project\SIREN\siren\data_rendering\normal_integration\poly2d\mask.npy')
-    # mask = np.ones_like(depth).astype(np.bool)
-    # generate_mesh(depth, mask, 'test.png', 1/128, np.array([1000, 1000]), title = 'test')
-    mesh = pv.read(r'F:\Project\SIREN\siren\data\output_dir_near_light\04_bunny\orthographic\lambertian\scale_256_256\wo_castshadow\shading\nearPS\2021_08_03_21_59_23_26cdc382\test\iter_16000_Z_est.obj')
+    dargs = dict(show_edges=True)
+    # Rotate the mesh to have a second mesh
+    mesh_gt = pv.read(r'F:\Project\SIREN\siren\data\output_dir_near_light\09_reading\perspective\lambertian\scale_256_256\wo_castshadow\shading\render_para\shape.obj')
+    mesh_est = pv.read(r'F:\Project\SIREN\siren\data\output_dir_near_light\09_reading\perspective\lambertian\scale_256_256\wo_castshadow\shading\nearPS\2021_08_09_23_05_58_finite_diff\test\iter_08500_Z_est.obj')
 
-    scatter_3D_default_view_debug(mesh=mesh, img_name=None,  title='test')
+
+    ambient_value = 0.3
+    diffuse_value = 0.5
+    specular_value = 0.3
+    p = pv.Plotter(notebook=0, border=False, off_screen=True)
+
+    cpos_init = p.add_mesh(mesh_gt,
+                 color="w",
+                 smooth_shading=True,
+                 # screenshot=True,
+                 # off_screen=True,
+                 diffuse=diffuse_value,
+                 ambient=ambient_value,
+                 specular=specular_value,
+                 show_scalar_bar=False,
+                    opacity= 0.75
+                )
+
+    cpos_init = p.add_mesh(mesh_est,
+                        color="cyan",
+                        smooth_shading=True,
+                        # screenshot=True,
+                        # off_screen=True,
+                        diffuse=diffuse_value,
+                        ambient=ambient_value,
+                        specular=specular_value,
+                        show_scalar_bar=False,
+                        opacity=1
+                        )
+
+    # p.add_mesh(mesh_gt, color="blue", opacity=0.35, **dargs)
+    # p.add_mesh(mesh_est, color="white", opacity=0.35, **dargs)
+    # p.camera_position = cpos
+
+    p.show(auto_close=False)
+    p.open_gif("test.gif")
+
+    # Update camera and write a frame for each updated position
+    nframe = 100
+
+    radius = 5
+    for i in range(nframe):
+        x = np.cos(i * np.pi / 15.0)
+        z = np.sqrt(radius**2 - x **2)
+        p.camera_position = [
+            (x, 0, z),
+            (0, 0, 3),
+            (0, 1, 0),
+        ]
+        p.write_frame()
+
+    # Close movie and delete object
+    p.close()
 
