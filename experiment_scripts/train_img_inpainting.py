@@ -118,6 +118,7 @@ else:
 # Define the loss
 if opt.prior is None:
     loss_fn = partial(loss_functions.render_NL_img_mse_sv_albedo_lstsq, mask.view(-1,1), device = device)
+    loss_fn = partial(loss_functions.render_NL_img_mse, mask.view(-1,1))
 elif opt.prior == 'TV':
     loss_fn = partial(loss_functions.image_mse_TV_prior, mask.view(-1,1), opt.k1, model)
 elif opt.prior == 'FH':

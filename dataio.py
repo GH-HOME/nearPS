@@ -571,7 +571,7 @@ class ImageFileNPY(Dataset):
     def __init__(self, filename, grayScale = True):
         super().__init__()
         img = np.load(filename)
-
+        img = img / img.max()
         if len(img.shape) == 2:
             self.img_channels = 1
             self.img = img
@@ -582,12 +582,28 @@ class ImageFileNPY(Dataset):
                 self.img = np.mean(img, axis=2)
 
 
+
     def __len__(self):
         return 1
 
     def __getitem__(self, idx):
         return self.img
 
+class Shading_LEDNPY(Dataset):
+    def __init__(self, img_paths, LED_path, radius = 75):
+        super().__init__()
+
+        self.LED_set = np.load(LED_path)
+        self.numFrames =  len(self.LED_set)
+        self.imgs = np.load(img_paths)
+        self.radius = radius
+        self.img_channels = 1
+
+    def __len__(self):
+        return self.numFrames
+
+    def __getitem__(self, idx):
+        return {'img': self.imgs[idx], 'LED_loc': self.LED_set[idx], 'radius': self.radius}
 
 class NormalDepthFileNPY(Dataset):
     def __init__(self, filename_n, filename_d):
@@ -813,6 +829,7 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         img = torch.from_numpy(img)
         LED_loc = torch.from_numpy(LED_loc)
         img = img.permute(1, 2, 3, 0).view(-1,  self.dataset.color_channel, self.dataset.img_channels)
+        radius = torch.tensor(radius)
         in_dict = {'idx': idx, 'coords': self.mgrid}
 
         depth_gt, normal_gt = data['depth_gt'], data['normal_gt']
