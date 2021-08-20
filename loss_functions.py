@@ -542,8 +542,102 @@ def render_NL_img_mse_sv_albedo_lstsq_l1(mask, model_output, gt, total_steps, de
     if 'cam_para' in gt:
         # perspective projection
         focal_len, sensor_height, sensor_width = gt['cam_para'][0]
-        sensor_xx, sensor_yy = sensor_width / 2 * xx.unsqueeze(2), sensor_height / 2 * yy.unsqueeze(2)
-        dZ_sensor_x, dZ_sensor_y = du * 2 / sensor_width, dv * 2 / sensor_height
+        # todo fit general capture
+        sensor_xx, sensor_yy = sensor_width / 2 * xx.unsqueeze(2), sensor_height / 2 * yy.unsqueeze(2)  # the coordinate in mm in the sensor
+        dZ_sensor_x, dZ_sensor_y = du * 2 / sensor_width, dv * 2 / sensor_height # dz/d_sensor_x = dz / d(sensor_width / 2 * xx) = 2 / sensor_width * dz / dxx
+        nxp = dZ_sensor_x * focal_len
+        nyp = dZ_sensor_y * focal_len
+        nzp = - (zz + sensor_xx*dZ_sensor_x + sensor_yy * dZ_sensor_y)
+        normal_set = torch.stack([nxp, nyp, nzp], dim=2).squeeze(3)
+
+        point_set = torch.stack([sensor_xx * zz / focal_len,
+                                 sensor_yy * zz / focal_len,
+                                 zz], dim=2).squeeze(3)
+
+    else:
+        # orthographic projection
+        normal_set = torch.stack([du, dv, -dz], dim=2).squeeze(3)
+        point_set = torch.stack([xx.unsqueeze(2), yy.unsqueeze(2), zz], dim=2).squeeze(3)
+    N_norm = torch.norm(normal_set, p=2, dim=2)
+    normal_dir = normal_set / N_norm.unsqueeze(2)
+
+    # for debug
+    # normal_dir = gt['normal_gt']
+
+    # now we test use the rendering error for all image sequence
+    batch_size, numLEDs, _ = gt['LED_loc'].shape
+    batch_size, numPixel, numChannel = zz.shape
+    shading_set = torch.zeros([batch_size, numPixel, numChannel, numLEDs], dtype=torch.float64)
+
+    shading_set = shading_set.to(device)
+    attach_shadow = torch.nn.ReLU()
+    for i in range(numLEDs):
+        LED_loc = gt['LED_loc'][:, i].unsqueeze(1)
+        lights = LED_loc - point_set
+        L_norm = torch.norm(lights, p=2, dim=2).unsqueeze(2)
+        light_dir = lights / L_norm
+        light_falloff = torch.pow(L_norm, -2)
+
+        shading = torch.sum(light_dir * normal_dir, dim=2, keepdims=True)
+
+        img = light_falloff * shading
+        shading_set[:, :, :, i] = img
+        # shading_set[:, :, :, i] = torch.where(torch.isnan(img), shading_set[:, :, :, i], img)
+
+
+    # Calc the albedo from the least square
+    if total_steps > 2e3:
+        shading_set = attach_shadow(shading_set)
+
+    shading_sum = (shading_set * shading_set).sum(dim = 3)
+    shading_sum = torch.where(shading_sum < 1e-8, torch.ones_like(shading_sum) * 1e-8, shading_sum)
+    albedo = (gt['img'] * attach_shadow(shading_set)).sum(dim = 3) / shading_sum
+
+
+    # L1 loss
+    residue = torch.abs(gt['img'] - attach_shadow(shading_set) * albedo.unsqueeze(3))
+    img_loss_all = (mask.unsqueeze(0) * residue.mean(dim = 3)).mean()
+
+    # for debug
+    # normal_loss = 1 - F.cosine_similarity(normal_dir, gt['normal_gt'], dim=-1)[..., None]
+    # depth_loss = ((zz - gt['depth_gt']) ** 2)
+
+
+    if mask is None:
+        return {'img_loss': (img_loss_all + depth_loss + normal_loss).mean()}
+    else:
+        return {
+                'img_loss': img_loss_all,
+                # 'depth_loss': (mask * (depth_loss)).mean(),
+                # 'normal_loss':(mask * (normal_loss)).mean(),
+                }
+
+
+def render_NL_img_mse_sv_albedo_lstsq_l1_real_data(mask, model_output, gt, total_steps, device):
+    gradients = diff_operators.gradient(model_output['model_out'], model_output['model_in'])
+    dx, dy = gradients[:, :, 0], gradients[:, :, 1]
+
+    xx, yy = model_output['model_in'][:, :, 0], model_output['model_in'][:, :, 1]
+    zz = model_output['model_out']
+    du = dx.unsqueeze(2)
+    dv = dy.unsqueeze(2)
+    dz = torch.ones_like(du)
+
+    # for debug
+    # zz = gt['depth_gt']
+
+    if 'cam_para' in gt:
+        # perspective projection
+        focal_len, fx, fy, cx, cy, img_h, img_w  = gt['cam_para'][0]  # cx = crop_center - camera_matrix_x in ordinary image coordinates
+
+        m2pix_x = (fx / focal_len) * 1e3
+        m2pix_y = (fy / focal_len) * 1e3
+        focal_len = focal_len / 1000 # mm -> m
+
+
+        # todo: lack the transform of the coordinate xx--> -xx yy--> -yy
+        sensor_xx, sensor_yy = -(img_w / 2 * xx.unsqueeze(2) + cx) / m2pix_x,  -(img_h / 2 * yy.unsqueeze(2) + cy) / m2pix_y  # the coordinate in mm in the sensor
+        dZ_sensor_x, dZ_sensor_y = -du * 2 * m2pix_x / img_w, -dv * m2pix_y * 2 / img_h # dz/d_sensor_x = dz / d(sensor_width / 2 * xx) = 2 / sensor_width * dz / dxx
         nxp = dZ_sensor_x * focal_len
         nyp = dZ_sensor_y * focal_len
         nzp = - (zz + sensor_xx*dZ_sensor_x + sensor_yy * dZ_sensor_y)

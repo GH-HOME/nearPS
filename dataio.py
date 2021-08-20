@@ -53,8 +53,8 @@ def get_mgrid_fxx_fyy(sidelen, dim=2, mask = None):
         yy = np.flip(yy, axis=0)
         xx = np.flip(xx, axis=1)
         pixel_coords = np.stack([xx, yy], axis=-1)[None, ...].astype(np.float32) ## -yy, xx
-        pixel_coords[0, :, :, 0] = pixel_coords[0, :, :, 0] / (sidelen[0] - 1) #xx
-        pixel_coords[0, :, :, 1] = pixel_coords[0, :, :, 1] / (sidelen[1] - 1)
+        pixel_coords[0, :, :, 0] = pixel_coords[0, :, :, 0] / (column - 1) #xx
+        pixel_coords[0, :, :, 1] = pixel_coords[0, :, :, 1] / (row - 1)
     else:
         raise NotImplementedError('Not implemented for dim=%d' % dim)
 
@@ -74,11 +74,10 @@ def get_mgrid_xx_yy(sidelen, dim=2, mask = None):
     if dim == 2:
         row, column = sidelen[0], sidelen[1]
         yy, xx = np.mgrid[:row, :column]
-        yy = np.flip(yy, axis=0)
 
         pixel_coords = np.stack([xx, yy], axis=-1)[None, ...].astype(np.float32) ## -yy, xx
-        pixel_coords[0, :, :, 0] = pixel_coords[0, :, :, 0] / (sidelen[0] - 1) #xx
-        pixel_coords[0, :, :, 1] = pixel_coords[0, :, :, 1] / (sidelen[1] - 1)
+        pixel_coords[0, :, :, 0] = pixel_coords[0, :, :, 0] / (column - 1) #xx
+        pixel_coords[0, :, :, 1] = pixel_coords[0, :, :, 1] / (row - 1)
     else:
         raise NotImplementedError('Not implemented for dim=%d' % dim)
 
@@ -742,14 +741,24 @@ class Shading_LEDNPY(Dataset):
         self.numFrames =  len(self.LED_set)
         self.imgs = np.load(img_paths)
         self.img_channels = len(self.imgs)
-        self.depth = np.load(depth_path)
-        self.normal = np.load(normal_path)
+
+        if depth_path is not None:
+            self.depth = np.load(depth_path)
+        else:
+            self.depth = None
+        if normal_path is not None:
+            self.normal = np.load(normal_path)
+        else:
+            self.normal = None
+
         self.mask = np.load(mask_path)
         self.camera_para = camera_para
         self.albedo = None
 
         if len(self.imgs.shape) == 4 and not use_color_channel: # RGB
             self.imgs = np.mean(self.imgs, axis=3, keepdims=True)
+        if len(self.imgs.shape) == 3:
+            self.imgs = self.imgs[:,:,:,np.newaxis]
 
         if custom_albedo is not None:
             self.albedo = np.load(custom_albedo)
@@ -788,7 +797,9 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         self.compute_diff = compute_diff
         self.dataset = dataset
 
-        self.mgrid = get_mgrid_fxx_fyy(sidelength)
+        # self.mgrid = get_mgrid_fxx_fyy(sidelength)
+        self.mgrid = get_mgrid_xx_yy(sidelength)
+
 
     def __len__(self):
         return len(self.dataset)
@@ -802,22 +813,27 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         img = torch.from_numpy(img)
         LED_loc = torch.from_numpy(LED_loc)
         img = img.permute(1, 2, 3, 0).view(-1,  self.dataset.color_channel, self.dataset.img_channels)
-
+        in_dict = {'idx': idx, 'coords': self.mgrid}
 
         depth_gt, normal_gt = data['depth_gt'], data['normal_gt']
-        depth_gt = self.transform(depth_gt)
-        normal_gt = self.transform(normal_gt)
+        shape_dict = {}
+        if depth_gt is not None:
+            depth_gt = self.transform(depth_gt)
+            depth_gt = depth_gt.permute(1, 2, 0).view(-1, 1)
+            shape_dict['depth_gt'] = depth_gt
 
-        depth_gt = depth_gt.permute(1, 2, 0).view(-1, 1)
-        normal_gt = normal_gt.permute(1, 2, 0).view(-1, 3)
+        if normal_gt is not None:
+            normal_gt = self.transform(normal_gt)
+            normal_gt = normal_gt.permute(1, 2, 0).view(-1, 3)
+            shape_dict['normal_gt'] = normal_gt
 
-        in_dict = {'idx': idx, 'coords': self.mgrid}
-        # gt_dict = {'img': img}
+
+
         # gt_dict = {'img': img, 'LED_loc': LED_loc}
         if data['cam_para'] is not None:
-            gt_dict = {'img': img, 'LED_loc': LED_loc, 'cam_para': torch.from_numpy(data['cam_para']), 'depth_gt': depth_gt, 'normal_gt': normal_gt}
+            gt_dict = {'img': img, 'LED_loc': LED_loc, 'cam_para': torch.from_numpy(data['cam_para'])}
         else:
-            gt_dict = {'img': img, 'LED_loc': LED_loc, 'depth_gt': depth_gt, 'normal_gt': normal_gt}
+            gt_dict = {'img': img, 'LED_loc': LED_loc}
 
         return in_dict, gt_dict
 

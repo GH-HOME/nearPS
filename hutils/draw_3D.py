@@ -249,9 +249,44 @@ if __name__ == "__main__":
 
     dargs = dict(show_edges=True)
     # Rotate the mesh to have a second mesh
-    mesh_gt = pv.read(r'F:\Project\SIREN\siren\data\output_dir_near_light\09_reading\perspective\lambertian\scale_256_256\wo_castshadow\shading\render_para\shape.obj')
-    mesh_est = pv.read(r'F:\Project\SIREN\siren\data\output_dir_near_light\09_reading\perspective\lambertian\scale_256_256\wo_castshadow\shading\nearPS\2021_08_09_23_05_58_finite_diff\test\iter_08500_Z_est.obj')
+    mesh_gt = pv.read(r'F:\Project\blender_2.8_rendering\tool\nearlight\output_dir_near_light\09_reading\perspective\lambertian\scale_256_256\wo_castshadow\shading\render_para\shape.obj')
+    mesh_est = pv.read(r'F:\Project\SIREN\siren\data\output_dir_near_light\09_reading\perspective\lambertian\scale_256_256\wo_castshadow\shading\nearPS\2021_08_09_23_05_58_finite_diff_l1\test\iter_08500_Z_est.obj')
 
+    # specular parameter
+    ambient_value = 0.3
+    diffuse_value = 0.5
+    specular_value = 0.3
+    p = pv.Plotter(border=False)
+
+    p.set_background(color="white")
+
+    # step 2: find the good camera pose
+    cpos = [
+        (0, 1, -2),
+        (0, 0, 2),
+        (0, 1, 0),
+    ]
+
+    cpos_init, img = pv.plot(mesh_gt,
+                             cpos=cpos,
+                             color="w",
+                             smooth_shading=True,
+                             diffuse=diffuse_value,
+                             ambient=ambient_value,
+                             specular=specular_value,
+                             show_scalar_bar=False,
+                             show_axes=False,
+                             window_size=(1280, 720)
+                             )
+
+    # if title is not None:
+    #     p.add_title(title, font_size=24)
+
+    pv.close_all()
+    pv.plot()
+
+    import sys
+    sys.exit(0)
 
     ambient_value = 0.3
     diffuse_value = 0.5
@@ -282,27 +317,28 @@ if __name__ == "__main__":
                         opacity=1
                         )
 
-    # p.add_mesh(mesh_gt, color="blue", opacity=0.35, **dargs)
-    # p.add_mesh(mesh_est, color="white", opacity=0.35, **dargs)
-    # p.camera_position = cpos
+    p.add_mesh(mesh_gt, color="blue", opacity=0.35, **dargs)
+    p.add_mesh(mesh_est, color="white", opacity=0.35, **dargs)
+    p.camera_position = cpos
 
-    p.show(auto_close=False)
-    p.open_gif("test.gif")
+    # p.show(auto_close=False)
+    p.show()
+    # p.open_gif("test.gif")
 
-    # Update camera and write a frame for each updated position
-    nframe = 100
-
-    radius = 5
-    for i in range(nframe):
-        x = np.cos(i * np.pi / 15.0)
-        z = np.sqrt(radius**2 - x **2)
-        p.camera_position = [
-            (x, 0, z),
-            (0, 0, 3),
-            (0, 1, 0),
-        ]
-        p.write_frame()
-
-    # Close movie and delete object
-    p.close()
+    # # Update camera and write a frame for each updated position
+    # nframe = 100
+    #
+    # radius = 5
+    # for i in range(nframe):
+    #     x = np.cos(i * np.pi / 15.0)
+    #     z = np.sqrt(radius**2 - x **2)
+    #     p.camera_position = [
+    #         (x, 0, z),
+    #         (0, 0, 3),
+    #         (0, 1, 0),
+    #     ]
+    #     p.write_frame()
+    #
+    # # Close movie and delete object
+    # p.close()
 

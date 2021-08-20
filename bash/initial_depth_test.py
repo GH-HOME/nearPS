@@ -7,8 +7,8 @@ para_folder = '/mnt/workspace2020/heng/project/data/supp'
 shape_set = np.genfromtxt(os.path.join(para_folder, 'shape_list.csv'), delimiter=',', dtype=np.str)
 scale_set = np.genfromtxt(os.path.join(para_folder, 'scale_list_64_64.csv'), delimiter=',', dtype=np.int)
 base_data_dir = '/mnt/workspace2020/heng/project/data/output_dir_near_light'
-gpu_id = 6
-commit_id = 'f26d2e79'
+gpu_id = 5
+commit_id = '8e3608bc'
 use_SV_albedo = True
 scale_set = [[256, 256]]
 index = np.array([7, 4])
