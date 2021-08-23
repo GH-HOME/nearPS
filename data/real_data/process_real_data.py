@@ -21,7 +21,7 @@ run_light_selection = True
 run_save_config = True
 
 # step 1: undist image observation
-img_dir = r'G:\Dropbox\realdata_NLPS\FLIR_OBJ\2021_08_16_13_37_gray_traveler\render_img'
+img_dir = '/mnt/workspace2020/heng/project/data/real_data/FLIR/2021_08_16_13_37_gray_traveler/render_img'
 save_folder_crop_raw = os.path.join(img_dir, 'crop_to_size_{}'.format(target_width))
 createDir(save_folder_crop_raw)
 createDir(os.path.join(save_folder_crop_raw, 'render_img'))
@@ -86,7 +86,7 @@ if run_light_selection:
     light_44 = np.arange(98, 112).tolist() + np.arange(114, 131, 2).tolist() + np.arange(131, 144).tolist() + np.arange(241, 256, 2).tolist()
     light_44_label = np.array(light_44)
     light_44_index = np.array(light_44) - 1 # LED label to LED index
-    LED_set = LED_position[light_44]
+    LED_set = LED_position[light_44_index]
     LED_set[:, 0] *= (-1)
     LED_set[:, 1] *= (-1)
     LED_set = LED_set * 1e-3  # mm to m

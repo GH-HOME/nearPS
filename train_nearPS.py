@@ -21,7 +21,7 @@ p.add_argument('--experiment_name', type=str, default='nearPS', required=False,
 
 # General training options
 p.add_argument('--batch_size', type=int, default=1)
-p.add_argument('--lr', type=float, default=2e-4, help='learning rate. default=1e-4')
+p.add_argument('--lr', type=float, default=4e-5, help='learning rate. default=1e-4')
 p.add_argument('--num_epochs', type=int, default=50000,
                help='Number of epochs to train for.')
 p.add_argument('--k1', type=float, default=1, help='weight on prior')
@@ -47,11 +47,11 @@ p.add_argument('--color_channel', type=bool, default=False, help='whether to use
 
 
 p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained model.')
-p.add_argument('--data_folder', type=str, default=r'G:\Dropbox\realdata_NLPS\FLIR_OBJ\2021_08_16_13_37_gray_traveler\render_img\crop_to_size_256', help='Path to data')
+p.add_argument('--data_folder', type=str, default='/mnt/workspace2020/heng/project/data/real_data/FLIR/2021_08_16_13_37_gray_traveler/render_img/crop_to_size_256', help='Path to data')
 p.add_argument('--custom_depth_offset', type=float, default=0.3, help='initial depth from the LED position')
 p.add_argument('--sv_albedo', type=bool, default=False, help='whether to use SV albedo')
-p.add_argument('--gpu_id', type=int, default=1, help='GPU ID')
-p.add_argument('--env', type=str, default='win32', help='system environment')
+p.add_argument('--gpu_id', type=int, default=7, help='GPU ID')
+p.add_argument('--env', type=str, default='linux', help='system environment')
 
 
 opt = p.parse_args()
