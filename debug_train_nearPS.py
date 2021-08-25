@@ -15,13 +15,13 @@ import configparser
 
 p = configargparse.ArgumentParser()
 p.add('-c', '--config_filepath', required=False, is_config_file=True, help='Path to config file.')
-p.add_argument('--code_id', type=str, default='finite_diff', help='git commid id for the running')
+p.add_argument('--code_id', type=str, default='debug', help='git commid id for the running')
 p.add_argument('--experiment_name', type=str, default='nearPS', required=False,
                help='Name of subdirectory in logging_root where summaries and checkpoints will be saved.')
 
 # General training options
 p.add_argument('--batch_size', type=int, default=1)
-p.add_argument('--lr', type=float, default=2e-4, help='learning rate. default=1e-4')
+p.add_argument('--lr', type=float, default=1e-4, help='learning rate. default=1e-4')
 p.add_argument('--num_epochs', type=int, default=50000,
                help='Number of epochs to train for.')
 p.add_argument('--k1', type=float, default=1, help='weight on prior')
@@ -43,15 +43,15 @@ p.add_argument('--model_type', type=str, default='sine',
                help='Options currently are "sine" (all sine activations), "relu" (all relu activations,'
                     '"nerf" (relu activations and positional encoding as in NeRF), "rbf" (input rbf layer, rest relu),'
                     'and in the future: "mixed" (first layer sine, other layers tanh)')
-p.add_argument('--color_channel', type=bool, default=True, help='whether to use color channels')
+p.add_argument('--color_channel', type=bool, default=False, help='whether to use color channels')
 
 
 p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained model.')
-p.add_argument('--data_folder', type=str, default='./data/output_dir_near_light/09_reading/perspective/lambertian/scale_256_256/wo_castshadow/shading', help='Path to data')
-p.add_argument('--custom_depth_offset', type=float, default=3.0, help='initial depth from the LED position')
+p.add_argument('--data_folder', type=str, default='/mnt/workspace2020/heng/project/data/output_dir_near_light/09_reading/perspective/lambertian/scale_256_256/wo_castshadow/shading', help='Path to data')
+p.add_argument('--custom_depth_offset', type=float, default=3, help='initial depth from the LED position')
 p.add_argument('--sv_albedo', type=bool, default=False, help='whether to use SV albedo')
-p.add_argument('--gpu_id', type=int, default=1, help='GPU ID')
-p.add_argument('--env', type=str, default='win32', help='system environment')
+p.add_argument('--gpu_id', type=int, default=2, help='GPU ID')
+p.add_argument('--env', type=str, default='linux', help='system environment')
 
 
 opt = p.parse_args()
@@ -70,19 +70,33 @@ device = torch.device("cuda:{gpu}".format(gpu=opt.gpu_id))
 custom_mask = os.path.join(opt.data_folder, 'render_para/mask.npy')
 custom_image = os.path.join(opt.data_folder, 'render_img/imgs_blender.npy')
 custom_LEDs = os.path.join(opt.data_folder, 'render_para/LED_locs.npy')
+
 custom_depth = os.path.join(opt.data_folder, 'render_para/depth.npy')
 custom_normal = os.path.join(opt.data_folder, 'render_para/normal_world.npy')
+if not os.path.exists(custom_depth):
+    custom_depth = None
+if not os.path.exists(custom_normal):
+    custom_normal = None
 
-custom_camera_para = os.path.join(opt.data_folder, 'save.ini')
+custom_camera_para = os.path.join(opt.data_folder, 'render_para/save.ini')
 camera_para_config = configparser.ConfigParser()
 camera_para_config.optionxform = str
 camera_para_config.read(custom_camera_para)
-camera_para = np.array([float(camera_para_config['camera']['focal_length']),
-                        float(camera_para_config['camera']['sensor_height']),
-                        float(camera_para_config['camera']['sensor_width'])]) / 1000  # mm --> m
+
+camera_para = np.array([float(camera_para_config['configInfo']['focal_len']), # camera lens in mm
+                        float(camera_para_config['configInfo']['fx']), # fx in mm
+                        float(camera_para_config['configInfo']['fy']), # fy in mm
+                        float(camera_para_config['configInfo']['cx']),
+                        float(camera_para_config['configInfo']['cy']),
+                        float(camera_para_config['configInfo']['img_h']),
+                        float(camera_para_config['configInfo']['img_w'])
+                        ])
+
+custom_camera_K = np.load(os.path.join(opt.data_folder, 'render_para/camera_K.npy'))
 
 if opt.sv_albedo:
     custom_albedo = os.path.join(opt.data_folder, 'render_para/albedo.npy')
+    custom_image_sv_albedo = os.path.join(opt.data_folder, 'render_img/img_sv_albedo.npy')
 else:
     custom_albedo = None
 
@@ -156,28 +170,30 @@ else:
 
 # Define the loss
 if opt.prior is None:
-    loss_fn = partial(loss_functions.render_NL_img_mse_sv_albedo_lstsq_l2_finite_diff, mask.view(-1,1),
-                      device = device, resolution = np.array([image_resolution[0], image_resolution[1]]))
+    loss_fn = partial(loss_functions.render_NL_img_mse_sv_albedo_lstsq_l1_real_data, mask.view(-1,1), device = device)
 elif opt.prior == 'TV':
     loss_fn = partial(loss_functions.image_mse_TV_prior, mask.view(-1,1), opt.k1, model)
 elif opt.prior == 'FH':
     loss_fn = partial(loss_functions.image_mse_FH_prior, mask.view(-1,1), opt.k1, model)
-summary_fn = partial(utils.write_image_summary, image_resolution)
+summary_fn = partial(utils.write_image_summary_read_data_no_gt, image_resolution)
 
 
 kwargs = {'save_folder': os.path.join(root_path, 'test'),
-          'N_gt': np.load(custom_normal),
-          'depth_gt': np.load(custom_depth),
           'vmaxNDA': [10, 0.1, 0.1],
           'mask': np.load(custom_mask)}
 
 if custom_albedo is not None:
     kwargs['albedo_gt'] = np.load(custom_albedo)
-    kwargs['imgs'] = np.load(custom_image)
+    kwargs['imgs'] = np.load(custom_image_sv_albedo)
     kwargs['LED_loc'] = np.load(custom_LEDs)
 
+if custom_depth is not None:
+    kwargs['depth_gt'] = np.load(custom_depth)
+if custom_normal is not None:
+    kwargs['N_gt'] = np.load(custom_normal)
 
-save_state_path = None# save_state_path = '/mnt/workspace2020/heng/project/data/output_dir_near_light/04_bunny/orthographic/lambertian/scale_256_256/wo_castshadow/shading/nearPS/2021_08_03_23_24_24_re_train_l1/checkpoints/model_epoch_35000.pth'
+
+save_state_path = None
 
 
 training.train(model=model, train_dataloader=dataloader, epochs=opt.num_epochs, lr=opt.lr,

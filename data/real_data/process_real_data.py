@@ -43,10 +43,12 @@ if run_crop:
     img = cv2.imread(png_paths[0], cv2.IMREAD_UNCHANGED)
     h, w = img.shape
     from hutils.gui.rect_select import rect_drawer
-    myrect = rect_drawer(img)
+    scale = 4
+    img_r = cv2.resize(img, (int(w/scale), int(h/scale)))
+    myrect = rect_drawer(img_r)
     myrect.build_mouse()
     myrect.finish()
-    rec = myrect.rect
+    rec = myrect.rect * scale
 
     np.save(os.path.join(img_dir, 'origin_crop_rec.npy'), np.array(rec))
 
@@ -59,7 +61,7 @@ if run_crop:
     for path in npy_paths:
         print(path)
         img = np.load(path)
-        img_resize  = cv2.resize(img, (resize_w, resize_h), cv2.INTER_NEAREST)
+        img_resize = cv2.resize(img, (resize_w, resize_h), cv2.INTER_NEAREST)
         img_crop = img_resize[rec_resize[1]:rec_resize[1] + rec_resize[3], rec_resize[0]:rec_resize[0] + rec_resize[2]]
 
         file_name = os.path.basename(path)

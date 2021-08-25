@@ -22,7 +22,7 @@ p.add_argument('--experiment_name', type=str, default='nearPS', required=False,
 # General training options
 p.add_argument('--batch_size', type=int, default=1)
 p.add_argument('--lr', type=float, default=1e-4, help='learning rate. default=1e-4')
-p.add_argument('--num_epochs', type=int, default=100000,
+p.add_argument('--num_epochs', type=int, default=50000,
                help='Number of epochs to train for.')
 p.add_argument('--k1', type=float, default=1, help='weight on prior')
 p.add_argument('--sparsity', type=float, default=1, help='percentage of pixels filled')
@@ -43,12 +43,17 @@ p.add_argument('--model_type', type=str, default='sine',
                help='Options currently are "sine" (all sine activations), "relu" (all relu activations,'
                     '"nerf" (relu activations and positional encoding as in NeRF), "rbf" (input rbf layer, rest relu),'
                     'and in the future: "mixed" (first layer sine, other layers tanh)')
+p.add_argument('--color_channel', type=bool, default=False, help='whether to use color channels')
+
 
 p.add_argument('--checkpoint_path', default=None, help='Checkpoint to trained model.')
-p.add_argument('--data_folder', type=str, default='./data/output_dir_near_light/Sphere/perspective/lambertian/scale_128_128/wo_castshadow/shading', help='Path to data')
-p.add_argument('--custom_depth_offset', type=float, default=3.0, help='initial depth from the LED position')
+p.add_argument('--data_folder', type=str, default='/mnt/workspace2020/heng/project/data/real_data/FLIR/2021_08_16_16_57_gray_ele/render_img/crop_to_size_256', help='Path to data')
+p.add_argument('--custom_depth_offset', type=float, default=0.3, help='initial depth from the LED position')
+p.add_argument('--sv_albedo', type=bool, default=False, help='whether to use SV albedo')
 p.add_argument('--gpu_id', type=int, default=1, help='GPU ID')
-p.add_argument('--env', type=str, default='win32', help='system environment')
+p.add_argument('--env', type=str, default='linux', help='system environment')
+
+
 opt = p.parse_args()
 
 if opt.env == 'linux':
@@ -63,17 +68,38 @@ device = torch.device("cuda:{gpu}".format(gpu=opt.gpu_id))
 
 # load data_path
 custom_mask = os.path.join(opt.data_folder, 'render_para/mask.npy')
-custom_image = os.path.join(opt.data_folder, 'render_img/imgs_blender.npy')
+custom_image = os.path.join(opt.data_folder, 'render_img/imgs_real_44.npy')
 custom_LEDs = os.path.join(opt.data_folder, 'render_para/LED_locs.npy')
+
 custom_depth = os.path.join(opt.data_folder, 'render_para/depth.npy')
 custom_normal = os.path.join(opt.data_folder, 'render_para/normal_world.npy')
-custom_camera_para = os.path.join(opt.data_folder, 'save.ini')
+if not os.path.exists(custom_depth):
+    custom_depth = None
+if not os.path.exists(custom_normal):
+    custom_normal = None
+
+custom_camera_para = os.path.join(opt.data_folder, 'render_para/save.ini')
 camera_para_config = configparser.ConfigParser()
 camera_para_config.optionxform = str
 camera_para_config.read(custom_camera_para)
-camera_para = np.array([float(camera_para_config['camera']['focal_length']),
-                        float(camera_para_config['camera']['sensor_height']),
-                        float(camera_para_config['camera']['sensor_width'])]) / 1000  # mm --> m
+
+camera_para = np.array([float(camera_para_config['configInfo']['focal_len']), # camera lens in mm
+                        float(camera_para_config['configInfo']['fx']), # fx in mm
+                        float(camera_para_config['configInfo']['fy']), # fy in mm
+                        float(camera_para_config['configInfo']['cx']),
+                        float(camera_para_config['configInfo']['cy']),
+                        float(camera_para_config['configInfo']['img_h']),
+                        float(camera_para_config['configInfo']['img_w'])
+                        ])
+
+custom_camera_K = np.load(os.path.join(opt.data_folder, 'render_para/camera_K.npy'))
+
+if opt.sv_albedo:
+    custom_albedo = os.path.join(opt.data_folder, 'render_para/albedo.npy')
+    custom_image_sv_albedo = os.path.join(opt.data_folder, 'render_img/img_sv_albedo.npy')
+else:
+    custom_albedo = None
+
 
 
 
@@ -86,12 +112,18 @@ if opt.dataset == 'camera_downsampled':
     coord_dataset = dataio.Implicit2DWrapper(img_dataset, sidelength=256, compute_diff='all')
     image_resolution = (256, 256)
 if opt.dataset == 'custom':
-    img_dataset = dataio.Shading_LEDNPY(custom_image, custom_LEDs, custom_mask, custom_normal, custom_depth, camera_para)
+    img_dataset = dataio.Shading_LEDNPY(custom_image, custom_LEDs, custom_mask, custom_normal,
+                                        custom_depth, camera_para, custom_albedo, opt.color_channel)
     # img_dataset = dataio.SurfaceTent(128)
     if len(img_dataset[0]['img'].shape) == 3:
         numImg, h, w = img_dataset[0]['img'].shape
-    else:
+    elif len(img_dataset[0]['img'].shape) == 4:
+        numImg, h, w, numChannel = img_dataset[0]['img'].shape
+    elif len(img_dataset[0]['img'].shape) == 2:
         h, w = img_dataset[0]['img'].shape
+    else:
+        raise Exception('Image channel is not fit.')
+
     image_resolution = (h, w)
     coord_dataset = dataio.Implicit2DWrapper(img_dataset, image_resolution, compute_diff='gradients')
     offset = opt.custom_depth_offset
@@ -138,22 +170,32 @@ else:
 
 # Define the loss
 if opt.prior is None:
-    loss_fn = partial(loss_functions.render_NL_img_mse_sv_albedo_lstsq_l1, mask.view(-1,1), device = device)
+    loss_fn = partial(loss_functions.render_NL_img_mse_sv_albedo_lstsq_l1_real_data, mask.view(-1,1), device = device)
 elif opt.prior == 'TV':
     loss_fn = partial(loss_functions.image_mse_TV_prior, mask.view(-1,1), opt.k1, model)
 elif opt.prior == 'FH':
     loss_fn = partial(loss_functions.image_mse_FH_prior, mask.view(-1,1), opt.k1, model)
-summary_fn = partial(utils.write_image_summary, image_resolution)
+summary_fn = partial(utils.write_image_summary_read_data_no_gt, image_resolution)
 
 
 kwargs = {'save_folder': os.path.join(root_path, 'test'),
-          'N_gt': np.load(custom_normal),
-          'depth_gt': np.load(custom_depth),
-          'vmaxND': [10, 1],
+          'vmaxNDA': [10, 0.1, 0.1],
           'mask': np.load(custom_mask)}
 
+if custom_albedo is not None:
+    kwargs['albedo_gt'] = np.load(custom_albedo)
+    kwargs['imgs'] = np.load(custom_image_sv_albedo)
+    kwargs['LED_loc'] = np.load(custom_LEDs)
 
-save_state_path = None
+if custom_depth is not None:
+    kwargs['depth_gt'] = np.load(custom_depth)
+if custom_normal is not None:
+    kwargs['N_gt'] = np.load(custom_normal)
+
+
+save_state_path = None# save_state_path = '/mnt/workspace2020/heng/project/data/output_dir_near_light/04_bunny/orthographic/lambertian/scale_256_256/wo_castshadow/shading/nearPS/2021_08_03_23_24_24_re_train_l1/checkpoints/model_epoch_35000.pth'
+
+
 training.train(model=model, train_dataloader=dataloader, epochs=opt.num_epochs, lr=opt.lr,
                steps_til_summary=opt.steps_til_summary, epochs_til_checkpoint=opt.epochs_til_ckpt,
                model_dir=root_path, loss_fn=loss_fn, summary_fn=summary_fn, use_lbfgs = False, kwargs = kwargs,
