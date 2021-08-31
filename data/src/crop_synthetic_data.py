@@ -26,7 +26,7 @@ import configparser
 config = configparser.ConfigParser()
 config.optionxform = str
 config.read(ini_file)
-camera_K = np.fromstring(config['info']['camera_intrinsic'][2:-1], dtype=float, sep=',').reshape(3, 3)
+camera_K = np.fromstring(config['info']['camera_intrinsic'][1:-1], dtype=float, sep=',').reshape(3, 3)
 
 save_folder_crop_raw = os.path.join(img_dir, 'crop_to_size_{}'.format(target_width))
 createDir(save_folder_crop_raw)
@@ -105,10 +105,10 @@ if run_save_config:
     crop_rec_center = np.array([resize_crop_rec[0] + resize_crop_rec[2] / 2, resize_crop_rec[1] + resize_crop_rec[3] / 2])
 
     configinfo = {
-        "focal_len": "50", "fx": "{}".format(camera_K_crop_raw[0, 0]), "fy": "{}".format(camera_K_crop_raw[1, 1]),
-        "cx": "{}".format(crop_rec_center[0] - camera_K_crop_raw[0, 2]), "cy": "{}".format(crop_rec_center[1] - camera_K_crop_raw[1, 2]),
-        "img_h": "{}".format(img_set.shape[1]), "img_w": "{}".format(img_set.shape[2]),
-        "numImg": "{}".format(img_set.shape[0])}
+            "focal_len": "50", "fx": "{}".format(camera_K_crop_raw[0, 0]), "fy": "{}".format(camera_K_crop_raw[1, 1]),
+            "cx": "{}".format(crop_rec_center[0] - camera_K_crop_raw[0, 2]), "cy": "{}".format(crop_rec_center[1] - camera_K_crop_raw[1, 2]),
+            "img_h": "{}".format(img_set.shape[1]), "img_w": "{}".format(img_set.shape[2]),
+            "numImg": "{}".format(img_set.shape[0])}
 
     config.add_section('configInfo')
     for key in configinfo.keys():

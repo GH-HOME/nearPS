@@ -14,14 +14,14 @@ mapx, mapy = camera_para['mapx'], camera_para['mapy']
 LED_position = np.load(os.path.join(para_folder, 'params_light.npz'))['led_pt']
 target_width = 256
 is_square = True
-run_undist = False
-run_crop = False
+run_undist = True
+run_crop = True
 run_mask_generation = True
 run_light_selection = True
 run_save_config = True
 
 # step 1: undist image observation
-img_dir = '/mnt/workspace2020/heng/project/data/real_data/FLIR/2021_08_16_13_37_gray_traveler/render_img'
+img_dir = r'F:\Project\SIREN\siren\data\real_data\FLIR\2021_08_16_16_41_gray_guy\render_img'
 save_folder_crop_raw = os.path.join(img_dir, 'crop_to_size_{}'.format(target_width))
 createDir(save_folder_crop_raw)
 createDir(os.path.join(save_folder_crop_raw, 'render_img'))
@@ -48,7 +48,7 @@ if run_crop:
     myrect = rect_drawer(img_r)
     myrect.build_mouse()
     myrect.finish()
-    rec = myrect.rect * scale
+    rec = np.array(myrect.rect) * scale
 
     np.save(os.path.join(img_dir, 'origin_crop_rec.npy'), np.array(rec))
 
