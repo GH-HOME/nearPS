@@ -61,7 +61,7 @@ if run_crop:
     for path in npy_paths:
         print(path)
         img = np.load(path)
-        img_resize  = cv2.resize(img, (resize_w, resize_h), cv2.INTER_NEAREST)
+        img_resize = cv2.resize(img, (resize_w, resize_h), cv2.INTER_NEAREST)
         img_crop = img_resize[rec_resize[1]:rec_resize[1] + rec_resize[3], rec_resize[0]:rec_resize[0] + rec_resize[2]]
 
         file_name = os.path.basename(path)

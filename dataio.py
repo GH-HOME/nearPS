@@ -829,7 +829,6 @@ class Implicit2DWrapper(torch.utils.data.Dataset):
         img = torch.from_numpy(img)
         LED_loc = torch.from_numpy(LED_loc)
         img = img.permute(1, 2, 3, 0).view(-1,  self.dataset.color_channel, self.dataset.img_channels)
-        radius = torch.tensor(radius)
         in_dict = {'idx': idx, 'coords': self.mgrid}
 
         depth_gt, normal_gt = data['depth_gt'], data['normal_gt']

@@ -421,6 +421,9 @@ def createImgGIF(gif_path, img_filenames, fps = 10):
 
 if __name__ == '__main__':
 
-    img_path = r'F:\Project\SIREN\siren\data\output_dir_near_light\09_reading\orthographic\lambertian\scale_256_256\wo_castshadow\shading\render_img\imgs.npy'
-    img = np.load(img_path)
-    create_gif(img, save_path = img_path[:-3]+'gif')
+    # img_path = r'F:\Project\SIREN\siren\data\output_dir_near_light\09_reading\orthographic\lambertian\scale_256_256\wo_castshadow\shading\render_img\imgs.npy'
+    # img = np.load(img_path)
+    # create_gif(img, save_path = img_path[:-3]+'gif')
+    #
+    LED_3d = np.load(r'C:\Dropbox\realdata_NLPS\FLIR_OBJ\2021_08_16_13_37_gray_traveler\render_img\crop_to_size_256\render_para\LED_locs.npy')
+    scatter_3d(LED_3d)
