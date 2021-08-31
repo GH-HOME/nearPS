@@ -50,18 +50,18 @@ def out_normal_map(filename, N,maskindx,height,width):
     normap=np.reshape(normap,(height,width,3))     
     out_normal_image(filename, normap)
     
-def read_gt_depth(inputDir, scale=1.0):    
-    filepath=inputDir+'zgt.npz'      
+def read_gt_depth(inputDir, scale=1.0):
+    filepath = os.path.join(inputDir, 'zgt.npz')
     if  not os.path.isfile(filepath):       
             return None    
     npzfile = np.load(filepath)
     Z=npzfile['zgt']
-    zgt_int=npzfile['zgt_int']
+    # zgt_int=npzfile['zgt_int']
    
     if scale != 1.0:
         Z = cv2.resize(Z, None, fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)  
-        zgt_int = cv2.resize(zgt_int, None, fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
-    return Z, zgt_int
+        # zgt_int = cv2.resize(zgt_int, None, fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
+    return Z
 
 def export_ply_points(name, x,y,z,triangle_list):       
     nverts=x.shape[0]
