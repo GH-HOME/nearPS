@@ -72,8 +72,8 @@ custom_mask = os.path.join(opt.data_folder, 'render_para/mask.npy')
 custom_image = os.path.join(opt.data_folder, 'render_img/imgs_real_44.npy')
 custom_LEDs = os.path.join(opt.data_folder, 'render_para/LED_locs.npy')
 
-custom_depth = os.path.join(opt.data_folder, 'render_para/depth.npy')
-custom_normal = os.path.join(opt.data_folder, 'render_para/normal_world.npy')
+custom_depth = os.path.join(opt.data_folder, 'render_para/depth_crop_raw.npy')
+custom_normal = os.path.join(opt.data_folder, 'render_para/normal_world_crop_raw.npy')
 if not os.path.exists(custom_depth):
     custom_depth = None
 if not os.path.exists(custom_normal):
