@@ -10,7 +10,7 @@ from data.real_data.io_nf import readNFSetup, read_gt_depth, load_images
 # step 1: load camera matrix and LED position
 
 
-def organzie_data(base_folder, object_name, scale):
+def organzie_data(base_folder, object_name, scale, ignoreBoundaries = True):
     para_folder = os.path.join(base_folder, object_name)
     numLight, ncols, nrows, f, x0, y0, mean_distance, Lpos, Ldir, Phi, mu = readNFSetup(os.path.join(para_folder, 'led_params.txt'), scale)
     camera_K = np.array([f, 0, x0, 0, f, y0, 0, 0, 1]).reshape(3, 3)
@@ -20,6 +20,12 @@ def organzie_data(base_folder, object_name, scale):
     Lpos = Lpos * 1e-3  # mm to m
 
     mask = cv2.imread(os.path.join(para_folder, 'mask.png'), 0).astype(np.bool)
+    if ignoreBoundaries:
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+        mask_old=np.copy(mask).astype(np.uint8)
+        mask = cv2.erode(mask_old, kernel).astype(np.bool)
+
+
     mask = cv2.resize(mask.astype(np.uint8), None, fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST).astype(np.bool)
     N_gt_obj, mask_n = readNormal16bitRGB(os.path.join(para_folder, 'normals.png'))
     N_gt_obj = cv2.resize(N_gt_obj, None, fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
@@ -60,12 +66,17 @@ def organzie_data(base_folder, object_name, scale):
 
     # now begin to save
     np.save(os.path.join(save_dir, 'render_img/imgs_luces.npy'), img_set)
+    np.save(os.path.join(save_dir, 'render_para/mask.npy'), mask)
     np.save(os.path.join(save_dir, 'render_para/LED_locs.npy'), Lpos)
     np.save(os.path.join(save_dir, 'render_para/camera_K.npy'), camera_K)
     np.save(os.path.join(save_dir, 'render_para/normal_obj.npy'), N_gt_obj)
     np.save(os.path.join(save_dir, 'render_para/normal_world.npy'), N_gt_world)
     np.save(os.path.join(save_dir, 'render_para/depth.npy'), depth_gt)
     np.save(os.path.join(save_dir, 'render_para/point_set_world.npy'), point_set_world)
+    np.save(os.path.join(save_dir, 'render_para/light_ins.npy'), Phi)
+    np.save(os.path.join(save_dir, 'render_para/mu.npy'), mu)
+    np.save(os.path.join(save_dir, 'render_para/LED_principle_dir.npy'), Ldir)
+
 
     from hutils.draw_3D import generate_mesh
     point_3d_name = os.path.join(save_dir, 'render_para/shape.png')
@@ -96,17 +107,29 @@ def organzie_data(base_folder, object_name, scale):
 
 
 if __name__ == '__main__':
-    base_folder = r'F:\Project\SIREN\siren\data\real_data\LUCES\Luces\data'
+    base_folder = '/mnt/workspace2020/heng/project/data/real_data/LUCES/Luces/data'
+    env = 'linux'
+    if env == 'linux':
+        from matplotlib import pyplot as plt
+
+        plt.switch_backend('agg')
+        import pyvista as pv
+
+        pv.start_xvfb()
+
     file_names = os.listdir(base_folder)
+    obj_name_set = []
     for name in file_names:
         folder_path = os.path.join(base_folder, name)
         if os.path.isdir(folder_path):
             object_name = name
-            for scale in [0,125, 0.25]:
+            obj_name_set.append(object_name)
+            print(object_name)
+            for scale in [0.5]:
                 print(folder_path, scale)
                 organzie_data(base_folder, object_name, scale)
 
 
-
+    np.savetxt(os.path.join(base_folder, 'shape_list.csv'), np.array(obj_name_set), delimiter=",", fmt = '%s')
 
 
