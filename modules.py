@@ -291,6 +291,7 @@ class SingleBVPNet(MetaModule):
             coords = self.positional_encoding(coords)
 
         output = self.net(coords, get_subdict(params, 'net'))
+        output = torch.abs(output) + 1e-3 # make sure the depth is in the front of the camera
         return {'model_in': coords_org, 'model_out': output}
 
     def forward_with_activations(self, model_input):

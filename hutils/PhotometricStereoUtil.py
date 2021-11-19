@@ -88,22 +88,3 @@ def fillHole(mask_valid, mask_full, input_with_hole, require_normalize=False):
 
     return input_full, mask_valid
 
-
-
-
-# s = np.load('../tmp/bunny_mo/albedo_None_erodeR_0/lightid_[3, 37, 50, 18, 39, 44, 21, 26, 16, 22]/Patch_RA_cost_cauchy_useBA_False_patchR_2/output.npy', allow_pickle=True)
-# N_est = s.item()['N_rot']
-# mask_valid = s.item()['N_mask']
-# N_gt = np.load('../tmp/bunny_mo/render_para/normal_obj.npy')
-# mask_full = np.load('../tmp/bunny_mo/render_para/mask.npy')
-# N_complete, mask_valid = fillHole(mask_valid, mask_full, N_est)
-#
-#
-# plt.figure()
-# plt.imshow(N_gt/2 + 0.5)
-# plt.show()
-#
-#
-# plt.figure()
-# plt.imshow(N_complete/2 + 0.5)
-# plt.show()
