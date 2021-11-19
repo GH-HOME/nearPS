@@ -15,14 +15,14 @@ import configparser
 
 p = configargparse.ArgumentParser()
 
-p.add_argument('--code_id', type=str, default='cvpr22_cubmit', help='git commid id for the running')
-p.add_argument('--experiment_name', type=str, default='nearPS', required=False,
+p.add_argument('--code_id', type=str, default='cvpr22_submit', help='git commid id for the running')
+p.add_argument('--experiment_name', type=str, default='Result_Ours', required=False,
                help='Name of subdirectory to save result.')
 
 # General training options
 p.add_argument('--batch_size', type=int, default=1)
 p.add_argument('--lr', type=float, default=1e-4, help='learning rate. default=1e-4')
-p.add_argument('--num_epochs', type=int, default=50000,
+p.add_argument('--num_epochs', type=int, default=100,
                help='Number of epochs to train for.')
 
 p.add_argument('--epochs_til_ckpt', type=int, default=1000,
@@ -133,13 +133,13 @@ if opt.difference == 'analytical':
     loss_fn = partial(loss_functions.analytical_L1, mask.view(-1,1), device = device)
 elif opt.difference == 'finite':
     print("Loss function: L1 finite difference re-rendering loss")
-    loss_fn = partial(loss_functions.finite_L1(), mask.view(-1,1), device = device)
+    loss_fn = partial(loss_functions.finite_L1, mask.view(-1,1), device = device)
 else:
     raise Exception('Unknown loss type')
 
 summary_fn = partial(utils.write_image_summary_read_data_no_gt, image_resolution)
 
-kwargs = {'save_folder': os.path.join(root_path, 'test'),
+kwargs = {'save_folder': os.path.join(root_path, 'Recoverd_Shapes'),
           'vmaxNDA': [10, 0.1, 0.1],
           'mask': np.load(custom_mask)}
 
