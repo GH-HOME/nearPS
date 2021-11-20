@@ -30,9 +30,7 @@ We provide:
 
 # Get started
 
-- Download the data and result into the `data` folder and unzip
-    - Synthetic data
-    - Real data
+- Download the [data and result](https://drive.google.com/file/d/193PQqyBX-os4WHIlCa1SdkmeYlj9TURl/view?usp=sharing) into the `data` folder and unzip
 
 - Check the data and released results from existing methods and ours, e.g.
     - synthetic_data
