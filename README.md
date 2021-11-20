@@ -1,10 +1,11 @@
 # Edge-preserving Near-light Photometric Stereo with Neural Surfaces
 
-Code and data of CVPR submission 3367, **used for CVPR review only**.
+ Code and data of CVPR submission 3367, **used for CVPR 2022 review only**.
 
+ All rights reserved by the authors of the CVPR'22 submission 3367.
 
 ## Dependencies
-The proposed method is implemented in [PyTorch](https://pytorch.org/) with [SIREN network]((https://github.com/vsitzmann/siren)) as backbone
+The proposed method is implemented in [PyTorch](https://pytorch.org/).
 - Python 3.7
 - PyTorch (version = 1.9.1)
 - numpy
@@ -38,8 +39,6 @@ We provide:
             - render_img: record rendered image data
             - render_para: record GT surface normal, depth, 3D mesh, point light positions and radiant parameters
             - Released_Result: save recovered surface normal and depth, reconstructed 3D mesh
-
--
 - Reproduce the experimental results shown in the paper
     ```
     python demo.py
@@ -47,3 +46,6 @@ We provide:
     The shape estimation results from our method will be saved at
     - ``./data/synthetic_data/objectname/Result_Ours/datetime_cvpr22_submit_experimentname/Recoverd_Shapes``
     - ``./data/real_data/objectname/Result_Ours/datetime_cvpr22_submit_experimentname/Recoverd_Shapes``
+
+
+The network structure follows [SIREN network]((https://github.com/vsitzmann/siren)).
