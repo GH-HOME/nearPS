@@ -37,7 +37,7 @@ p.add_argument('--is_flip', type=bool, default=False, help='whether to flip imag
 p.add_argument('--cast_shadow_ratio', type=float, default=0.05, help='threshold for determine the cast shadow')
 
 p.add_argument('--checkpoint_path', default=None, help='Checkpoint path of trained model.')
-p.add_argument('--data_folder', type=str, default=r'F:\Project\SIREN\siren\data\output_dir_near_light\13_pyramid\perspective\lambertian\scale_256_256\w_castshadow\shading', help='Path to data')
+p.add_argument('--data_folder', type=str, default=None, help='Path to data')
 p.add_argument('--img_name', type=str, default='img_sv_albedo.npy', help='image name')
 p.add_argument('--custom_depth_offset', type=float, default=3, help='initial depth from the LED position')
 p.add_argument('--difference', type=str, default='analytical', help='whether to use finite difference or the analytical difference')

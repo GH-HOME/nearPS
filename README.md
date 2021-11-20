@@ -1,9 +1,9 @@
 # Edge-preserving Near-light Photometric Stereo with Neural Surfaces
 
- Code and data of CVPR submission 3367, **used for CVPR 2022 review only**.
-
+ Code and data of CVPR submission 3367, **used for CVPR 2022 review only**. 
+ 
  All rights reserved by the authors of the CVPR'22 submission 3367.
-
+ 
 ## Dependencies
 The proposed method is implemented in [PyTorch](https://pytorch.org/).
 - Python 3.7

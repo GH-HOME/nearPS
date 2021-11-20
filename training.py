@@ -53,6 +53,7 @@ def train(model, train_dataloader, epochs, lr, steps_til_summary, epochs_til_che
     model_input = {key: value.to(device) for key, value in model_input.items()}
     gt = {key: value.to(device) for key, value in gt.items()}
 
+    Finish_iter_flag = False
     with tqdm(total = epochs) as pbar:
         train_losses = []
         for epoch in range(epochs):
@@ -88,13 +89,28 @@ def train(model, train_dataloader, epochs, lr, steps_til_summary, epochs_til_che
             train_loss = 0.
             for loss_name, loss in losses.items():
                 single_loss = loss.mean()
-                # print(loss_name, loss)
+                if single_loss < 0:
+                    torch.save(model.state_dict(),
+                               os.path.join(checkpoints_dir, 'model_best.pth'))
+                    print('===================================\n==> Save best model parameters at {}'
+                          .format(os.path.join(checkpoints_dir, 'model_best.pth')))
+
+                    summary_fn(model, model_input, gt, model_output, writer, total_steps,
+                               loss_val=0.0, kwargs=kwargs)
+                    print('==> Save best shape recovery result at {} at iteration {}\n===================================\n'
+                          .format(kwargs['save_folder'], total_steps))
+                    Finish_iter_flag = True
+                    break
+
                 if loss_schedules is not None and loss_name in loss_schedules:
                     writer.add_scalar(loss_name + "_weight", loss_schedules[loss_name](total_steps), total_steps)
                     single_loss *= loss_schedules[loss_name](total_steps)
 
                 writer.add_scalar(loss_name, single_loss, total_steps)
                 train_loss += single_loss
+
+            if Finish_iter_flag:
+                break
 
             train_losses.append(train_loss.item())
             writer.add_scalar("total_train_loss", train_loss, total_steps)

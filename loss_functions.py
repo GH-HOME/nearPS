@@ -72,6 +72,9 @@ def analytical_L1(mask, model_output, gt, total_steps, device):
     mask_cast_shadow = gt['cast_shadow_mask']
     shading_set[mask_cast_shadow] = 0
 
+    #################################################################################
+    # Calculate dependent albedo from current depth and surface normal
+    ################################################################################
     shading_sum = (shading_set * shading_set).sum(dim = 3)
     albedo = (gt['img'] * shading_set).sum(dim = 3) / shading_sum
     albedo[torch.isnan(albedo)] = 0
@@ -79,12 +82,13 @@ def analytical_L1(mask, model_output, gt, total_steps, device):
 
 
     img_loss_all = L1_loss(gt['img'][~mask_cast_shadow], img_recons[~mask_cast_shadow])
+    if img_loss_all < 1e-5:
+        print('Convergent to {} at iteration {}'.format(img_loss_all, total_steps))
+        img_loss_all = torch.tensor(-1.0)
+        return { 'img_loss': img_loss_all}
+    else:
+        return { 'img_loss': img_loss_all}
 
-    loss_dict = {
-            'img_loss': img_loss_all,
-            }
-
-    return loss_dict
 
 
 
