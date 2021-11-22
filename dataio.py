@@ -170,9 +170,7 @@ class Shading_LEDNPY(Dataset):
             self.LED_mu = np.load(custom_mu)
             self.LED_PDIR = np.load(custom_LED_PDIR)
         else:
-            # self.LED_mu = np.zeros(self.numFrames) #* 0.7216
-            # self.LED_mu = np.ones(self.numFrames)  * 0.7216
-            self.LED_mu = np.ones(self.numFrames)  * 0.5736861698163338
+            self.LED_mu = np.zeros(self.numFrames)
             self.LED_PDIR = np.zeros([self.numFrames, 3])
             self.LED_PDIR[:, 2] = 1
 

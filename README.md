@@ -21,7 +21,7 @@ We provide:
 - Datasets and results:
     - Real-captured near-light image data
     - Synthetic near-light image data with ground truth surface normal and depth
-- Estimation results from existing methods and ours
+- Estimation results from existing methods and ours shown in the main paper
 - Implementing of our method
     - ``modules.py``: Network structure of our neural surface
     - ``loss_functions.py``: Reconstruction loss with albedo depending on the surface normal and depth
