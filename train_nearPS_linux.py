@@ -15,7 +15,7 @@ import configparser
 
 p = configargparse.ArgumentParser()
 
-p.add_argument('--code_id', type=str, default='cvpr22_submit', help='git commid id for the running')
+p.add_argument('--code_id', type=str, default='TPAMI_submit', help='git commid id for the running')
 p.add_argument('--experiment_name', type=str, default='Result_Ours', required=False,
                help='Name of subdirectory to save result.')
 

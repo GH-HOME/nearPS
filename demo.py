@@ -11,7 +11,7 @@ def run_synthetic_data_eval_fig6():
                     './data/synthetic_data/Bunny',
                     './data/synthetic_data/Tent']
 
-    commit_id = 'cvpr22_submit_synthetic_eval'
+    commit_id = 'TPAMI_submit_synthetic_eval'
     for data_dir in folder_paths:
         os.system("python ./train_nearPS_linux.py --data_folder {} --gpu_id {} --code_id {} --custom_depth_offset 3.0 --img_name img_sv_albedo.npy".format(
             data_dir, gpu_id, commit_id))
@@ -27,7 +27,7 @@ def run_finite_diff_eval_fig7():
                     './data/synthetic_data/Bunny',
                     './data/synthetic_data/Tent']
 
-    commit_id = 'cvpr22_submit_{}_difference'
+    commit_id = 'TPAMI_submit_{}_difference'
     for diff_type in ['analytical', 'finite']:
         for data_dir in folder_paths:
             os.system("python ./train_nearPS_linux.py --data_folder {} --gpu_id {} --code_id {} --difference {} --custom_depth_offset 3.0 --img_name img_sv_albedo.npy".format(
@@ -41,7 +41,7 @@ def run_initial_depth_eval_fig8():
     """
     data_dir = './data/synthetic_data/Bear'
 
-    commit_id = 'cvpr22_submit_depth_init_{}m'
+    commit_id = 'TPAMI_submit_depth_init_{}m'
     for init_depth in [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5]:
         os.system("python ./train_nearPS_linux.py --data_folder {} --gpu_id {} --code_id {} --custom_depth_offset {} --img_name img_sv_albedo.npy".format(
             data_dir, gpu_id, commit_id.format(init_depth), init_depth))
@@ -56,7 +56,7 @@ def run_real_data_eval_fig11():
                     './data/real_data/Plato',
                     './data/real_data/Stair']
 
-    commit_id = 'cvpr22_submit_real_eval'
+    commit_id = 'TPAMI_submit_real_eval'
     for data_dir in folder_paths:
         os.system("python ./train_nearPS_linux.py --data_folder {} --gpu_id {} --code_id {} --custom_depth_offset 0.4 --img_name imgs_flir.npy".format(
             data_dir, gpu_id, commit_id))
